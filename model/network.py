@@ -21,67 +21,6 @@ class ResBlock(nn.Module):
         return out
 
 
-# Encoder Network
-class Encoder(nn.Module):
-    def __init__(self, input_channels):
-        super(Encoder, self).__init__()
-        self.res_blocks = nn.Sequential(*[ResBlock(64) for _ in range(4)])
-        self.down_sample = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
-            nn.LeakyReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU()
-        )
-        self.initial_conv = ResBlock(input_channels)
-
-    def forward(self, x):
-        x = self.initial_conv(x)
-        x = self.resblocks(x)
-        l1 = x
-        x = self.downsample1(x)
-        l2 = x
-        x = self.downsample2(x)
-        l3 = x
-        return l1, l2, l3
-
-
-# Reconstruction Module
-class ReconstructionModule(nn.Module):
-    def __init__(self):
-        super(ReconstructionModule, self).__init__()
-        self.res_blocks = nn.Sequential(*[ResBlock(64) for _ in range(10)])
-
-    def forward(self, x):
-        x = self.res_blocks(x)
-        return x
-
-
-class DCNv2Pack(ModulatedDeformConvPack):
-    """Modulated deformable conv for deformable alignment.
-
-    Different from the official DCNv2Pack, which generates offsets and masks
-    from the preceding features, this DCNv2Pack takes another different
-    features to generate offsets and masks.
-
-    Ref:
-        Delving Deep into Deformable Alignment in Video Super-Resolution.
-    """
-
-    def forward(self, x, feat):
-        out = self.conv_offset(feat)
-        o1, o2, mask = torch.chunk(out, 3, dim=1)
-        offset = torch.cat((o1, o2), dim=1)
-        mask = torch.sigmoid(mask)
-
-        offset_absmean = torch.mean(torch.abs(offset))
-        if offset_absmean > 50:
-            print(f'Offset abs mean is {offset_absmean}, larger than 50.')
-
-        return modulated_deform_conv(x, offset, mask, self.weight, self.bias,
-                                     self.stride, self.padding, self.dilation,
-                                     self.groups, self.deformable_groups)
-
-
 class CLSTM_cell(nn.Module):
     """ConvLSTMCell
     """
@@ -136,6 +75,77 @@ class CLSTM_cell(nn.Module):
         return torch.stack(output_inner), (hy, cy)
 
 
+# Encoder Network
+class Encoder(nn.Module):
+    def __init__(self, input_channels):
+        super(Encoder, self).__init__()
+        self.res_blocks = nn.Sequential(*[ResBlock(64) for _ in range(4)])
+        self.down_sample = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.LeakyReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU()
+        )
+        self.initial_conv = ResBlock(input_channels)
+
+    def forward(self, x):
+        x = self.initial_conv(x)
+        x = self.resblocks(x)
+        l1 = x
+        x = self.downsample1(x)
+        l2 = x
+        x = self.downsample2(x)
+        l3 = x
+        return l1, l2, l3
+
+
+class LSTMEvent(nn.Module):
+    def __init__(self, shape, input_channels, filter_size, num_features):
+        super(LSTMEvent, self).__init__()
+        self.convLSTM = CLSTM_cell(shape, input_channels, filter_size, num_features)
+
+    def forward(self, inputs, hidden_state, seq_len):
+        hidden_outputs, (h_output, c_output) = self.convLSTM(inputs, hidden_state, seq_len)
+        return h_output
+
+
+# Reconstruction Module
+class ReconstructionModule(nn.Module):
+    def __init__(self):
+        super(ReconstructionModule, self).__init__()
+        self.res_blocks = nn.Sequential(*[ResBlock(64) for _ in range(10)])
+
+    def forward(self, x):
+        x = self.res_blocks(x)
+        return x
+
+
+class DCNv2Pack(ModulatedDeformConvPack):
+    """Modulated deformable conv for deformable alignment.
+
+    Different from the official DCNv2Pack, which generates offsets and masks
+    from the preceding features, this DCNv2Pack takes another different
+    features to generate offsets and masks.
+
+    Ref:
+        Delving Deep into Deformable Alignment in Video Super-Resolution.
+    """
+
+    def forward(self, x, feat):
+        out = self.conv_offset(feat)
+        o1, o2, mask = torch.chunk(out, 3, dim=1)
+        offset = torch.cat((o1, o2), dim=1)
+        mask = torch.sigmoid(mask)
+
+        offset_absmean = torch.mean(torch.abs(offset))
+        if offset_absmean > 50:
+            print(f'Offset abs mean is {offset_absmean}, larger than 50.')
+
+        return modulated_deform_conv(x, offset, mask, self.weight, self.bias,
+                                     self.stride, self.padding, self.dilation,
+                                     self.groups, self.deformable_groups)
+
+
 class PCDAlignment(nn.Module):
     """Alignment module using Pyramid, Cascading and Deformable convolution
     (PCD). It is used in EDVR.
@@ -164,7 +174,7 @@ class PCDAlignment(nn.Module):
         # Pyramids
         for i in range(3, 0, -1):
             level = f'l{i}'
-            self.offset_conv1[level] = nn.Conv2d(num_feat * 2, num_feat, 3, 1,
+            self.offset_conv1[level] = nn.Conv2d(num_feat * 3, num_feat, 3, 1,
                                                  1)
             if i == 3:
                 self.offset_conv2[level] = nn.Conv2d(num_feat, num_feat, 3, 1,
@@ -199,7 +209,7 @@ class PCDAlignment(nn.Module):
             scale_factor=2, mode='bilinear', align_corners=False)
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
 
-    def forward(self, nbr_feat_l, ref_feat_l):
+    def forward(self, nbr_feat_l, ref_feat_l, event_feat_l):
         """Align neighboring frame features to the reference frame features.
 
         Args:
@@ -217,7 +227,7 @@ class PCDAlignment(nn.Module):
         upsampled_offset, upsampled_feat = None, None
         for i in range(3, 0, -1):
             level = f'l{i}'
-            offset = torch.cat([nbr_feat_l[i - 1], ref_feat_l[i - 1]], dim=1)
+            offset = torch.cat([nbr_feat_l[i - 1], event_feat_l[i - 1], ref_feat_l[i - 1]], dim=1)
             offset = self.lrelu(self.offset_conv1[level](offset))
             if i == 3:
                 offset = self.lrelu(self.offset_conv2[level](offset))
