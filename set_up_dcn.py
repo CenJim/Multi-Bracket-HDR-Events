@@ -1,6 +1,6 @@
 import torch
 import os
-from torch.utils.cpp_extension import (CppExtension, CUDAExtension)
+from torch.utils.cpp_extension import (CppExtension, CUDAExtension, BuildExtension)
 from setuptools import setup
 
 
@@ -11,6 +11,7 @@ def make_cuda_ext(name, module, sources, sources_cuda=None):
     extra_compile_args = {'cxx': []}
 
     if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
+        print('have cuda')
         define_macros += [('WITH_CUDA', None)]
         extension = CUDAExtension
         extra_compile_args['nvcc'] = [
@@ -45,5 +46,6 @@ if __name__ == '__main__':
         name='dcn_setup_for_this',
         version='1.0',
         description='This is a specific package for this project',
-        ext_modules=ext_modules
+        ext_modules=ext_modules,
+        cmdclass={'build_ext': BuildExtension}
     )
