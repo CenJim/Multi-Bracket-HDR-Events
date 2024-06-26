@@ -47,5 +47,6 @@ if __name__ == '__main__':
         version='1.0',
         description='This is a specific package for this project',
         ext_modules=ext_modules,
-        cmdclass={'build_ext': BuildExtension}
+        cmdclass={'build_ext': BuildExtension},
+        zipsafe=False
     )
