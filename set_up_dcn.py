@@ -1,6 +1,7 @@
 import torch
 import os
 from torch.utils.cpp_extension import (CppExtension, CUDAExtension)
+from setuptools import setup
 
 
 def make_cuda_ext(name, module, sources, sources_cuda=None):
@@ -40,3 +41,9 @@ if __name__ == '__main__':
                 'src/deform_conv_cuda_kernel.cu'
             ]),
     ]
+    setup(
+        name='dcn_setup_for_this',
+        version='1.0',
+        description='This is a specific package for this project',
+        ext_modules=ext_modules
+    )
