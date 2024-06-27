@@ -96,7 +96,7 @@ class Encoder(nn.Module):
         l2 = x
         x = self.downsample2(x)
         l3 = x
-        return l1, l2, l3
+        return [l1, l2, l3]
 
 
 class LSTMEvent(nn.Module):
@@ -261,11 +261,12 @@ class PCDAlignment(nn.Module):
 
 
 class PairwiseAttention(nn.Module):
-    def __int__(self):
+    def __int__(self, num_feat=64):
         super(PairwiseAttention, self).__init__()
+        self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
         self.weights_cal = nn.Sequential(
-            nn.Conv2d(128, 64, 3, 1, 1),
-            nn.LeakyReLU(),
+            nn.Conv2d(num_feat * 2, 64, 3, 1, 1),
+            self.lrelu,
             nn.Conv2d(64, 64, 3, 1, 1),
             nn.Sigmoid()
         )
@@ -291,3 +292,89 @@ class PairwiseAttention(nn.Module):
 
         return pairwise_fusion
 
+
+class SpatialAttention(nn.Module):
+    def __int__(self, num_feat=64, num_frame=3):
+        super(SpatialAttention, self).__init__()
+        # spatial attention (after fusion conv)
+        self.max_pool = nn.MaxPool2d(3, stride=2, padding=1)
+        self.avg_pool = nn.AvgPool2d(3, stride=2, padding=1)
+        self.spatial_attn1 = nn.Conv2d(num_frame * num_feat, num_feat, 1)
+        self.spatial_attn2 = nn.Conv2d(num_feat * 2, num_feat, 1)
+        self.spatial_attn3 = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
+        self.spatial_attn4 = nn.Conv2d(num_feat, num_feat, 1)
+        self.spatial_attn5 = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
+        self.spatial_attn_l1 = nn.Conv2d(num_feat, num_feat, 1)
+        self.spatial_attn_l2 = nn.Conv2d(num_feat * 2, num_feat, 3, 1, 1)
+        self.spatial_attn_l3 = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
+        self.spatial_attn_add1 = nn.Conv2d(num_feat, num_feat, 1)
+        self.spatial_attn_add2 = nn.Conv2d(num_feat, num_feat, 1)
+
+        self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
+
+    def forward(self, pairwise_fusion, exposure_list):
+        attn = self.lrelu(self.attn1(torch.cat([exposure_list[1], exposure_list[0], exposure_list[2]], dim=1)))
+        attn_max = self.max_pool(attn)
+        attn_avg = self.avg_pool(attn)
+        attn = self.lrelu(
+            self.spatial_attn2(torch.cat([attn_max, attn_avg], dim=1)))
+        # pyramid levels
+        attn_level = self.lrelu(self.spatial_attn_l1(attn))
+        attn_max = self.max_pool(attn_level)
+        attn_avg = self.avg_pool(attn_level)
+        attn_level = self.lrelu(
+            self.spatial_attn_l2(torch.cat([attn_max, attn_avg], dim=1)))
+        attn_level = self.lrelu(self.spatial_attn_l3(attn_level))
+        attn_level = self.upsample(attn_level)
+
+        attn = self.lrelu(self.spatial_attn3(attn)) + attn_level
+        attn = self.lrelu(self.spatial_attn4(attn))
+        attn = self.upsample(attn)
+        attn = self.spatial_attn5(attn)
+        attn_add = self.spatial_attn_add2(
+            self.lrelu(self.spatial_attn_add1(attn)))
+        attn = torch.sigmoid(attn)
+
+        # after initialization, * 2 makes (attn * 2) to be close to 1.
+        feat = pairwise_fusion * attn * 2 + attn_add
+        return feat
+
+
+class EHDR_network(nn.Module):
+    def __int__(self, event_shape, num_feat=64, num_frame=3):
+        super(EHDR_network, self).__init__()
+        self.frame_encoder = Encoder(input_channels=6)
+        self.event_encoder = Encoder(input_channels=5)
+        self.event_lstm = LSTMEvent(shape=event_shape, input_channels=5, filter_size=3, num_features=64)
+        self.feature_alignment = PCDAlignment(num_feat=64)
+        self.pairwise_attention = PairwiseAttention(num_feat=64)
+        self.spatial_attention = SpatialAttention(num_feat=64, num_frame=3)
+        self.reconstruction = ReconstructionModule()
+        self.decode = nn.Conv2d(64, 3, 3, 1, 1)
+
+    def forward(self, reference, under_exposure, over_exposure, events_under, events_over):
+        """The whole network
+
+        :param reference: the reference exposure image, 6 channels
+        :param under_exposure: the under exposure image, 6 channels
+        :param over_exposure: the over exposure image, 6 channels
+        :param events_under: shape=(b, num_voxel_grids, c, h, w)
+        :param events_over: shape=(b, num_voxel_grids, c, h, w)
+        :return: a 3 channel reconstructed image tensor
+        """
+
+        reference_feature = self.frame_encoder(reference)
+        under_exposure_feature = self.frame_encoder(under_exposure)
+        over_exposure_feature = self.frame_encoder(over_exposure)
+        events_under_feature = self.event_lstm(self.frame_encoder(events_under), seq_len=events_under.shape(1))
+        events_over_feature = self.event_lstm(self.frame_encoder(events_over), seq_len=events_over.shape(1))
+        under_exposure_alignment = self.feature_alignment(under_exposure_feature, reference_feature,
+                                                          events_under_feature)
+        over_exposure_alignment = self.feature_alignment(over_exposure_feature, reference_feature, events_over_feature)
+        exposure_list = [reference_feature, under_exposure_alignment, over_exposure_alignment]
+        pairwise_fusion_feature = self.pairwise_attention(exposure_list)
+        all_fusion_alignment = self.spatial_attention(pairwise_fusion_feature, exposure_list)
+        reconstruction = self.reconstruction(all_fusion_alignment)
+        output = self.decode(torch.cat([reconstruction, reference_feature], dim=1))
+
+        return output
