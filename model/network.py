@@ -219,6 +219,9 @@ class PCDAlignment(nn.Module):
             ref_feat_l (list[Tensor]): Reference feature list. It
                 contains three pyramid levels (L1, L2, L3),
                 each with shape (b, c, h, w).
+            event_feat_l (list[Tensor]): Event feature list. It
+                contains three pyramid levels (L1, L2, L3),
+                each with shape (b, c, h, w).
 
         Returns:
             Tensor: Aligned features.
@@ -255,3 +258,36 @@ class PCDAlignment(nn.Module):
             self.cas_offset_conv2(self.lrelu(self.cas_offset_conv1(offset))))
         feat = self.lrelu(self.cas_dcnpack(feat, offset))
         return feat
+
+
+class PairwiseAttention(nn.Module):
+    def __int__(self):
+        super(PairwiseAttention, self).__init__()
+        self.weights_cal = nn.Sequential(
+            nn.Conv2d(128, 64, 3, 1, 1),
+            nn.LeakyReLU(),
+            nn.Conv2d(64, 64, 3, 1, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, exposure_list):
+        """The first fusion method.
+
+        Args:
+            exposure_list (list[Tensor]): Exposure feature list. It
+                contains three exposure version (I0, I-1, I1),
+                each with shape (b, c, h, w).
+
+        Returns:
+            Tensor: Pairwise fused features.
+        """
+        under_exposure_weights = self.weights_cal(self.conv1(torch.cat([exposure_list[0], exposure_list[1]], dim=1)))
+        reference_exposure_weights = self.weights_cal(
+            self.conv1(torch.cat([exposure_list[0], exposure_list[0]], dim=1)))
+        over_exposure_weights = self.weights_cal(self.conv1(torch.cat([exposure_list[0], exposure_list[2]], dim=1)))
+
+        pairwise_fusion = under_exposure_weights * exposure_list[1] + reference_exposure_weights * exposure_list[
+            0] + over_exposure_weights * exposure_list[2]
+
+        return pairwise_fusion
+
