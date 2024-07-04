@@ -18,9 +18,9 @@ class VoxelGrid(EventRepresentation):
         DeviceTimer = CudaTimer if device == 'cuda:0' else Timer
         with DeviceTimer('Events -> Device (voxel grid)'):
             x = x.to(device)
-            y = x.to(device)
-            pol = x.to(device)
-            time = x.to(device)
+            y = y.to(device)
+            pol = pol.to(device)
+            time = time.to(device)
         
         with DeviceTimer('Voxel grid voting'):
             C, H, W = self.voxel_grid.shape

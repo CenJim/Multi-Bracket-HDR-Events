@@ -31,8 +31,8 @@ def apply_inverse_crf_and_normalize(img, exposure_time, gamma=2.2):
 
 def transfer_hdr_to_ldr(hdr_image, exposure_time, gamma=2.2):
     """ 将HDR图像转换为LDR图像 """
-
-    ldr_image = np.clip(np.power((hdr_image * exposure_time), 1 / gamma), 0, 1)
+    # hdr_image = hdr_image / 255
+    ldr_image = np.clip(np.power((hdr_image * exposure_time), 1 / gamma), 0.2, 0.8)
     return ldr_image
 
 
@@ -67,7 +67,11 @@ def normalize_image(image_pil):
     return img.astype(np.float32) / 255.0
 
 
-def process_images(source_folder, target_folder, exposure_time, save_format: str = 'npy'):
+def scale_value(image, min_val=0.2, max_val=0.8):
+    return (image - min_val) / (max_val - min_val)
+
+
+def process_images(source_folder, target_folder, supervised_folder, exposure_time_path, save_format: str = 'npy'):
     """
     遍历指定文件夹下的所有图片，对每个图片进行处理，并保存为.npy文件到新的文件夹。
 
@@ -78,14 +82,19 @@ def process_images(source_folder, target_folder, exposure_time, save_format: str
     # 确保目标文件夹存在，如果不存在则创建
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
+    if not os.path.exists(supervised_folder):
+        os.makedirs(supervised_folder)
     processed_images = {}
+    supervised_images = {}
     # 构建图片文件的搜索模式
-    search_pattern = os.path.join(source_folder, '*.png')  # 假设图片是JPG格式
+    search_pattern = os.path.join(source_folder, '*.png')  # 假设图片是PNG格式
     image_files = glob.glob(search_pattern)
+
+    exposure_time_pairs = read_timestamps_from_file(exposure_time_path)
 
     # 遍历所有图片文件
     i = 0
-    for image_file in tqdm(sorted(image_files), total=len(image_files), desc='Processing images'):
+    for index, image_file in tqdm(enumerate(sorted(image_files)), total=len(image_files), desc='Processing images'):
         if i >= 3:
             i = 1
         else:
@@ -95,6 +104,8 @@ def process_images(source_folder, target_folder, exposure_time, save_format: str
         image_pil = resize_and_crop(image_pil, resize_width=715, resize_height=536, center_x=338, center_y=301,
                                     crop_width=640, crop_height=469)
         image = normalize_image(image_pil)
+        exposure_time = (np.float64(exposure_time_pairs[index][1]) - np.float64(
+            exposure_time_pairs[index][0])) / 1000000
         # 对图片进行特定操作
         if i == 1:
             hdr_image = apply_inverse_crf_and_normalize(image, exposure_time)
@@ -105,31 +116,47 @@ def process_images(source_folder, target_folder, exposure_time, save_format: str
             ldr_images = transfer_hdr_to_ldr(hdr_image, exposure_time * 3)
             processed_image = concatenate_to_six_channels(ldr_images, exposure_time * 3)
         else:
-            processed_image = concatenate_to_six_channels(image, exposure_time)
+            ldr_image = np.clip(image, 0.2, 0.8)
+            # image = scale_value(image, 0.2, 0.8)
+            processed_image = concatenate_to_six_channels(ldr_image, exposure_time)
 
         # 生成目标文件路径
         base_name = os.path.basename(image_file)
         if save_format == 'npy':
             target_file = os.path.join(target_folder, os.path.splitext(base_name)[0] + f'_{i}.npy')
+
             # 保存处理后的图片数据为.npy文件
             np.save(target_file, processed_image)
             # print(f"Processed image saved to {target_file}")
+            if i == 2:
+                supervised_file = os.path.join(supervised_folder, os.path.splitext(base_name)[0] + '.npy')
+                np.save(supervised_file, image)
         elif save_format == 'npz':
             base_name = os.path.basename(image_file)
             key = os.path.splitext(base_name)[0] + f'_{i}'
             processed_images[key] = processed_image
             # print("Processed image: " + key)
+            if i == 2:
+                key = os.path.splitext(base_name)[0]
+                supervised_images[key] = image
         else:
             target_file = os.path.join(target_folder, os.path.splitext(base_name)[0] + f'_{i}.pt')
             # 保存处理后的图片数据为.pt文件
             torch.save(torch.from_numpy(processed_image), target_file)
             # print(f"Processed image saved to {target_file}")
+            if i == 2:
+                supervised_file = os.path.join(supervised_folder, os.path.splitext(base_name)[0] + '.pt')
+                torch.save(torch.from_numpy(image), supervised_file)
 
     if save_format == 'npz':
         npz_target_file = os.path.join(target_folder, 'all_processed_images.npz')
-        print('Saving npz')
+        print('Saving processed npz')
         np.savez_compressed(npz_target_file, **processed_images)
         print(f"All processed images saved to {npz_target_file}")
+        npz_supervised_file = os.path.join(supervised_folder, 'all_supervised_image.npz')
+        print('Saving supervised npz')
+        np.savez_compressed(npz_supervised_file, **supervised_images)
+        print(f"All supervised images saved to {npz_supervised_file}")
 
 
 def read_timestamps_from_file(file_path):
@@ -263,7 +290,9 @@ if __name__ == '__main__':
     # # process image and save to a path
     # image_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images'
     # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images processed'
-    # process_images(image_folder, output_folder, 0.034, 'npz')
+    # supervised_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images supervised'
+    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
+    # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npz')
 
     # process events and save to a path
     event_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken events left'
