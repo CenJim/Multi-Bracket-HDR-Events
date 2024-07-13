@@ -44,8 +44,10 @@ class SequenceDataset(Dataset):
             hdr_image_files = [f for f in sorted(os.listdir(hdr_image_folder)) if os.path.splitext(f)[1] == '.npy']
 
             # 确保输入和输出数量相同
-            hdr_image_files = hdr_image_files[:len(ldr_image_files_3) - len(hdr_image_files)]
-            for index, hdr_image_file in hdr_image_files:
+            pop_num = len(ldr_image_files_3) - len(hdr_image_files)
+            if pop_num < 0:
+                hdr_image_files = hdr_image_files[:pop_num]
+            for index, hdr_image_file in enumerate(hdr_image_files):
                 self.groups.append((os.path.join(ldr_image_folder, ldr_image_files_1[index]),
                                     os.path.join(ldr_image_folder, ldr_image_files_2[index]),
                                     os.path.join(ldr_image_folder, ldr_image_files_3[index]),
