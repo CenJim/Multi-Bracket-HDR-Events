@@ -93,9 +93,9 @@ class Encoder(nn.Module):
         x = self.initial_conv(x)
         x = self.res_blocks(x)
         l1 = x
-        x = self.downsample1(x)
+        x = self.down_sample(x)
         l2 = x
-        x = self.downsample2(x)
+        x = self.down_sample(x)
         l3 = x
         return [l1, l2, l3]
 
