@@ -367,8 +367,19 @@ class EHDR_network(nn.Module):
         reference_feature = self.frame_encoder(reference)
         under_exposure_feature = self.frame_encoder(under_exposure)
         over_exposure_feature = self.frame_encoder(over_exposure)
-        events_under_feature = self.event_lstm(self.frame_encoder(events_under), seq_len=events_under.shape(1))
-        events_over_feature = self.event_lstm(self.frame_encoder(events_over), seq_len=events_over.shape(1))
+
+        events_slices = []
+        for i in range(events_under.size(1)):
+            events_slices.append(self.frame_encoder(events_under[:, i, :, :, :]))
+        events_encoded = torch.stack(events_slices, dim=1)
+        events_under_feature = self.event_lstm(events_encoded, seq_len=events_under.shape(1))
+
+        events_slices = []
+        for i in range(events_under.size(1)):
+            events_slices.append(self.frame_encoder(events_over[:, i, :, :, :]))
+        events_encoded = torch.stack(events_slices, dim=1)
+        events_over_feature = self.event_lstm(events_encoded, seq_len=events_over.shape(1))
+
         under_exposure_alignment = self.feature_alignment(under_exposure_feature, reference_feature,
                                                           events_under_feature)
         over_exposure_alignment = self.feature_alignment(over_exposure_feature, reference_feature, events_over_feature)
