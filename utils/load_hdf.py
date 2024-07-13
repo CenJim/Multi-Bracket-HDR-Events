@@ -12,6 +12,10 @@ def chunk_2d_array(array, chunk_size):
     return chunked_array
 
 
+def chunk_2d_array_fix_num(array, num):
+    return np.array_split(array, num, axis=0)
+
+
 def get_dataset(file_path, chunk_flag=False, width=None, height=None, num_events_per_pixel=None):
     # open HDF5 file
     with h5py.File(os.path.join(file_path, 'events.h5'), 'r') as f:

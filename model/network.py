@@ -10,9 +10,10 @@ class ResBlock(nn.Module):
         self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
         self.relu = nn.ReLU(inplace=False)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.match_channels = nn.Conv2d(in_channels, 64, kernel_size=1)  # 1x1卷积用于通道数匹配
 
     def forward(self, x):
-        identity = x
+        identity = self.match_channels(x)  # 使用1x1卷积调整x的通道数
         out = self.conv1(x)
         out = self.relu(out)
         out = self.conv2(out)

@@ -5,7 +5,7 @@ import glob
 
 from tqdm import tqdm
 
-from utils.load_hdf import get_dataset, get_event_offset, chunk_2d_array
+from utils.load_hdf import get_dataset, get_event_offset, chunk_2d_array, chunk_2d_array_fix_num
 from utils.representations import VoxelGrid
 import torch
 from PIL import Image
@@ -202,8 +202,9 @@ def events_to_voxel_grid(x, y, p, t, voxel_grid: VoxelGrid, device: str = 'cpu')
         device)
 
 
-def get_voxel_grid(events, height, width, num_events_per_pixel, num_bins, device):
-    chunked_events = chunk_2d_array(events, int(width * height * num_events_per_pixel))
+def get_voxel_grid(events, height, width, number_chunk, num_bins, device):
+    # chunked_events = chunk_2d_array(events, int(width * height * num_events_per_pixel))
+    chunked_events = chunk_2d_array_fix_num(events, number_chunk)
     voxel_grid = VoxelGrid(num_bins, height, width, True)
     event_tensors = []
     for chunked_event in chunked_events:
@@ -214,7 +215,7 @@ def get_voxel_grid(events, height, width, num_events_per_pixel, num_bins, device
     return event_tensors
 
 
-def process_events(source_folder, target_folder, image_timestamps, width, height, num_events_per_pixel, num_bins,
+def process_events(source_folder, target_folder, image_timestamps, width, height, num_chunks, num_bins,
                    device, save_flag: bool = False, save_format: str = 'npy'):
     print('Loading the dataset...')
     events_dataset = get_dataset(source_folder)
@@ -243,8 +244,7 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
                 i += 1
         if j == 3:
             continue
-        voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_events_per_pixel, num_bins,
-                                            device)
+        voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_chunks, num_bins, device)
         events_chunks.append(voxel_grid_tensors)
         if save_flag:
             if save_format == 'npy':
@@ -299,18 +299,18 @@ if __name__ == '__main__':
     #     cv2.destroyAllWindows()
 
     # # process image and save to a path
-    image_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images'
-    output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images processed'
-    supervised_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images supervised'
-    image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
-    process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
+    # image_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images'
+    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images processed'
+    # supervised_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images supervised'
+    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
+    # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process events and save to a path
-    # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken events left'
-    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Events processed'
-    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
-    # # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left'
-    # # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left processed'
-    # # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-    # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 0.5, 5, device, True, 'npz')
+    event_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken events left'
+    output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Events processed'
+    image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
+    # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left'
+    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left processed'
+    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
