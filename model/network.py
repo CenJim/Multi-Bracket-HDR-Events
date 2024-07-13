@@ -91,7 +91,7 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         x = self.initial_conv(x)
-        x = self.resblocks(x)
+        x = self.res_blocks(x)
         l1 = x
         x = self.downsample1(x)
         l2 = x
