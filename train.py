@@ -84,8 +84,8 @@ class SequenceDataset(Dataset):
         ldr_image_1_tensor = torch.from_numpy(ldr_image_1).float()
         ldr_image_2_tensor = torch.from_numpy(ldr_image_2).float()
         ldr_image_3_tensor = torch.from_numpy(ldr_image_3).float()
-        events_1_tensor = torch.tensor(events_1)
-        events_2_tensor = torch.tensor(events_2)
+        events_1_tensor = torch.from_numpy(np.array(events_1))
+        events_2_tensor = torch.from_numpy(np.array(events_2))
         hdr_image_tensor = torch.from_numpy(hdr_image)
 
         tensors_list = [ldr_image_1_tensor, ldr_image_2_tensor, ldr_image_3_tensor, events_1_tensor, events_2_tensor,
@@ -114,10 +114,10 @@ class RandomTransform:
     def __init__(self):
         self.transform = transforms.Compose([
             transforms.RandomResizedCrop(size=256, scale=(0.5, 1.0), ratio=(1.0, 1.0)),
-            transforms.RandomRotation(90, expand=True),
+            transforms.RandomRotation(90, expand=False),
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
-            transforms.Lambda(lambda x: x[torch.randperm(3)])
+            # transforms.Lambda(lambda x: x[torch.randperm(3)])
         ])
 
     def __call__(self, data_list: list):

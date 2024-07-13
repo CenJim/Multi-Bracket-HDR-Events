@@ -120,6 +120,8 @@ def process_images(source_folder, target_folder, supervised_folder, exposure_tim
             # image = scale_value(image, 0.2, 0.8)
             processed_image = concatenate_to_six_channels(ldr_image, exposure_time)
 
+        image = image.transpose((2, 0, 1))
+        processed_image = processed_image.transpose((2, 0, 1))
         # 生成目标文件路径
         base_name = os.path.basename(image_file)
         if save_format == 'npy':
@@ -297,18 +299,18 @@ if __name__ == '__main__':
     #     cv2.destroyAllWindows()
 
     # # process image and save to a path
-    # image_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images'
-    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images processed'
-    # supervised_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images supervised'
-    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
-    # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npz')
+    image_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images'
+    output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images processed'
+    supervised_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images supervised'
+    image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
+    process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process events and save to a path
-    event_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken events left'
-    output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Events processed'
-    image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
-    # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left'
-    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left processed'
-    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 0.5, 5, device, True, 'npz')
+    # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken events left'
+    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Events processed'
+    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
+    # # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left'
+    # # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left processed'
+    # # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 0.5, 5, device, True, 'npz')
