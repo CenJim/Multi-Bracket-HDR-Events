@@ -223,8 +223,13 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
     i = 0
     events_length = len(events_dataset)
     events_chunks = []
+    j = 0
     for index, exposure_timestamp in tqdm(enumerate(exposure_timestamps[:-1]), total=len(exposure_timestamps) - 1,
                                           desc='Events processing'):
+        if j >= 3:
+            j = 1
+        else:
+            j += 1
         events_chunk = []
         while i < events_length:
             if exposure_timestamp <= events_dataset[i][0] + events_offset <= exposure_timestamps[index + 1]:
@@ -234,6 +239,8 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
                 break
             else:
                 i += 1
+        if j == 3:
+            continue
         voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_events_per_pixel, num_bins,
                                             device)
         events_chunks.append(voxel_grid_tensors)
@@ -246,25 +253,27 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
                     np.save(save_path, voxel_grid_tensor.numpy())
                     # print(f'save {index:06}_{vg_index:06}.pt to target_folder')
             elif save_format == 'npz':
-                voxel_grid_tensors_between = []
+
+                voxel_grid_tensors_between = {}
                 for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
                     if voxel_grid_tensor.is_cuda:
                         voxel_grid_tensor.cpu()
-                    voxel_grid_tensors_between.append(voxel_grid_tensor.numpy())
+                    voxel_grid_tensors_between[f'{vg_index:06}'] = (voxel_grid_tensor.numpy())
                     # print(f'Precessed events: {index:06}_{vg_index:06}')
-                key = f'{index:06}'
-                processed_events[key] = np.array(voxel_grid_tensors_between)
+                save_path = os.path.join(target_folder, f'{index:06}_{j}.npz')
+                np.savez_compressed(save_path, **voxel_grid_tensors_between)
+                # processed_events[key] = np.array(voxel_grid_tensors_between)
             else:
                 for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
                     save_path = os.path.join(target_folder, f'{index:06}_{vg_index:06}.pt')
                     torch.save(voxel_grid_tensor, save_path)
                     # print(f'save {index:06}_{vg_index:06}.pt to target_folder')
 
-    if save_flag and save_format == 'npz':
-        target_file = os.path.join(target_folder, 'all_processed_events.npz')
-        print('Saving the npz file...')
-        np.savez_compressed(target_file, **processed_events)
-        print(f"All processed events saved to {target_file}")
+    # if save_flag and save_format == 'npz':
+    #     target_file = os.path.join(target_folder, 'all_processed_events.npz')
+    #     print('Saving the npz file...')
+    #     np.savez_compressed(target_file, **processed_events)
+    #     print(f"All processed events saved to {target_file}")
 
     return events_chunks
 
