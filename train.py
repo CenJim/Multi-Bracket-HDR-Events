@@ -144,7 +144,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     learning_rate = 1e-4
     crop_size = 128
     time_steps = 1  # Calculate loss every 5 time steps
-    kwargs = {'event_shape': (469, 640), 'num_feat': 64, 'num_frame': 3}
+    kwargs = {'event_shape': (height, width), 'num_feat': 64, 'num_frame': 3}
     loss_value = 0
 
     # Network
@@ -186,7 +186,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
         current_lr = scheduler.get_last_lr()[0]
         print(f'Epoch {epoch + 1}, Current learning rate: {current_lr}')
     # 保存训练好的模型
-    model_path = 'pretrained_models/testEVSNN.pth'
+    model_path = 'pretrained_models/EHDR.pth'
     torch.save(model.state_dict(), model_path)
     print("Training complete!")
 
