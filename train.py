@@ -34,7 +34,7 @@ class SequenceDataset(Dataset):
             ldr_image_folder = os.path.join(seq, 'ldr_images')
             events_folder = os.path.join(seq, 'events')
             hdr_image_folder = os.path.join(seq, 'hdr_images')
-
+            print('ldr image folder: ' + ldr_image_folder)
             # 获取所有输入文件和输出文件
             ldr_image_files_1 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[1] == '1.npy']
             ldr_image_files_2 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[1] == '2.npy']
@@ -52,7 +52,7 @@ class SequenceDataset(Dataset):
                                     os.path.join(events_folder, events_files_1[index]),
                                     os.path.join(events_folder, events_files_2[index]),
                                     os.path.join(hdr_image_folder, hdr_image_file)))
-
+        print(f'length of the groups: {len(self.groups)}')
     def __len__(self):
         return len(self.groups)
 
@@ -144,12 +144,12 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     learning_rate = 1e-4
     crop_size = 128
     time_steps = 1  # Calculate loss every 5 time steps
-    kwargs = {'event_shape': (height, width), 'num_feat': 64, 'num_frame': 3}
+    # kwargs = {'event_shape': (height, width), 'num_feat': 64, 'num_frame': 3}
     loss_value = 0
 
     # Network
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = EHDR_network(kwargs).to(device)
+    model = EHDR_network(event_shape=(height, width), num_feat=64, num_frame=3).to(device)
     optimizer = Adam(model.parameters(), lr=learning_rate)
     scheduler = StepLR(optimizer, step_size=15, gamma=0.5)
     loss_fun = CombinedLoss()

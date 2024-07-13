@@ -1,0 +1,19 @@
+/home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=AlexNet_Weights.IMAGENET1K_V1`. You can also use `weights=AlexNet_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Setting up [LPIPS] perceptual loss: trunk [alex], v[0.1], spatial [off]
+Loading model from: /home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/lpips/weights/v0.1/alex.pth
+ldr image folder: /home/s2491540/dataset/DSEC/train_sequences/sequence_0000000/ldr_images
+length of the groups: 0
+0
+Traceback (most recent call last):
+  File "/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/train.py", line 211, in <module>
+    main(model_name, pretrain_models, root_files, save_path, height, width, num_events_per_pixel)
+  File "/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/train.py", line 162, in main
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+  File "/home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 351, in __init__
+    sampler = RandomSampler(dataset, generator=generator)  # type: ignore[arg-type]
+  File "/home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/torch/utils/data/sampler.py", line 107, in __init__
+    raise ValueError("num_samples should be a positive integer "
+ValueError: num_samples should be a positive integer value, but got num_samples=0

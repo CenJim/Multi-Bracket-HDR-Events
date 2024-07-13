@@ -261,7 +261,7 @@ class PCDAlignment(nn.Module):
 
 
 class PairwiseAttention(nn.Module):
-    def __int__(self, num_feat=64):
+    def __init__(self, num_feat=64):
         super(PairwiseAttention, self).__init__()
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
         self.weights_cal = nn.Sequential(
@@ -294,7 +294,7 @@ class PairwiseAttention(nn.Module):
 
 
 class SpatialAttention(nn.Module):
-    def __int__(self, num_feat=64, num_frame=3):
+    def __init__(self, num_feat=64, num_frame=3):
         super(SpatialAttention, self).__init__()
         # spatial attention (after fusion conv)
         self.max_pool = nn.MaxPool2d(3, stride=2, padding=1)
@@ -341,7 +341,7 @@ class SpatialAttention(nn.Module):
 
 
 class EHDR_network(nn.Module):
-    def __int__(self, event_shape, num_feat=64, num_frame=3):
+    def __init__(self, event_shape, num_feat=64, num_frame=3):
         super(EHDR_network, self).__init__()
         self.frame_encoder = Encoder(input_channels=6)
         self.event_encoder = Encoder(input_channels=5)
