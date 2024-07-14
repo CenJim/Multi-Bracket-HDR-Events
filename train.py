@@ -156,7 +156,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
          num_events_per_pixel: float):
     # Parameters
     epochs = 60
-    batch_size = 4
+    batch_size = 2
     learning_rate = 1e-4
     crop_size = 256
     time_steps = 1  # Calculate loss every 5 time steps
