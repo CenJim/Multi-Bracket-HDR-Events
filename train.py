@@ -84,9 +84,9 @@ class SequenceDataset(Dataset):
         ldr_image_1_tensor = torch.from_numpy(ldr_image_1).float()
         ldr_image_2_tensor = torch.from_numpy(ldr_image_2).float()
         ldr_image_3_tensor = torch.from_numpy(ldr_image_3).float()
-        events_1_tensor = torch.from_numpy(np.array(events_1))
-        events_2_tensor = torch.from_numpy(np.array(events_2))
-        hdr_image_tensor = torch.from_numpy(hdr_image)
+        events_1_tensor = torch.from_numpy(np.array(events_1)).float()
+        events_2_tensor = torch.from_numpy(np.array(events_2)).float()
+        hdr_image_tensor = torch.from_numpy(hdr_image).float()
 
         tensors_list = [ldr_image_1_tensor, ldr_image_2_tensor, ldr_image_3_tensor, events_1_tensor, events_2_tensor,
                         hdr_image_tensor]
