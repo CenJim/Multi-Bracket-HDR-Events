@@ -108,8 +108,8 @@ class CombinedLoss(nn.Module):
     def forward(self, pred, target):
         lpips_value = torch.mean(self.lpips_loss(pred, target))
         l1_value = self.l1_loss(pred, target)
-        print(f'lpips_value: {lpips_value}')
-        print(f'l1_value: {l1_value}')
+        # print(f'lpips_value: {lpips_value}')
+        # print(f'l1_value: {l1_value}')
         return lpips_value + l1_value
 
 
@@ -174,14 +174,14 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
 
     transform = RandomTransform()
     dataset = SequenceDataset(root_files, transform=transform)  # Placeholder for your dataset class
-    print(len(dataset))
+    print(f'length of dataset: {len(dataset)}')
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # Training loop
     model.train()
     for epoch in range(epochs):
         for i, (ldr_1, ldr_2, ldr_3, events_1, events_2, hdr) in enumerate(dataloader):
-            print(f'num of iteration: {i}')
+            # print(f'num of iteration: {i}')
             ldr_1, ldr_2, ldr_3, events_1, events_2, hdr = ldr_1.to(device), ldr_2.to(device), ldr_3.to(
                 device), events_1.to(device), events_2.to(device), hdr.to(device)
 
@@ -189,8 +189,8 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
             output = model(ldr_2, ldr_1, ldr_3, events_1, events_2)
 
             if (i + 1) % time_steps == 0:
-                print(f'output: {output}')
-                print(f'hdr: {hdr}')
+                # print(f'output: {output}')
+                # print(f'hdr: {hdr}')
                 loss = loss_fun(output, hdr)
                 loss_value = loss
                 loss.backward()
