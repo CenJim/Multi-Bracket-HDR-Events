@@ -348,9 +348,9 @@ class EHDR_network(nn.Module):
         self.frame_encoder = Encoder(input_channels=6)
         self.event_encoder = Encoder(input_channels=5)
         event_lstm_1 = LSTMEvent(shape=event_shape, input_channels=64, filter_size=3, num_features=64)
-        event_lstm_2 = LSTMEvent(shape=tuple(x / 2 for x in event_shape), input_channels=64, filter_size=3,
+        event_lstm_2 = LSTMEvent(shape=tuple(int(x / 2) for x in event_shape), input_channels=64, filter_size=3,
                                       num_features=64)
-        event_lstm_3 = LSTMEvent(shape=tuple(x / 4 for x in event_shape), input_channels=64, filter_size=3,
+        event_lstm_3 = LSTMEvent(shape=tuple(int(x / 4) for x in event_shape), input_channels=64, filter_size=3,
                                       num_features=64)
         self.event_lstm_list = nn.ModuleList([event_lstm_1, event_lstm_2, event_lstm_3])
         self.feature_alignment = PCDAlignment(num_feat=64)
