@@ -347,7 +347,12 @@ class EHDR_network(nn.Module):
         super(EHDR_network, self).__init__()
         self.frame_encoder = Encoder(input_channels=6)
         self.event_encoder = Encoder(input_channels=5)
-        self.event_lstm = LSTMEvent(shape=event_shape, input_channels=64, filter_size=3, num_features=64)
+        event_lstm_1 = LSTMEvent(shape=event_shape, input_channels=64, filter_size=3, num_features=64)
+        event_lstm_2 = LSTMEvent(shape=tuple(x / 2 for x in event_shape), input_channels=64, filter_size=3,
+                                      num_features=64)
+        event_lstm_3 = LSTMEvent(shape=tuple(x / 4 for x in event_shape), input_channels=64, filter_size=3,
+                                      num_features=64)
+        self.event_lstm_list = [event_lstm_1, event_lstm_2, event_lstm_3]
         self.feature_alignment = PCDAlignment(num_feat=64)
         self.pairwise_attention = PairwiseAttention(num_feat=64)
         self.spatial_attention = SpatialAttention(num_feat=64, num_frame=3)
@@ -377,8 +382,8 @@ class EHDR_network(nn.Module):
             tensors = [row[col] for row in events_slices]
             events_encoded.append(torch.stack(tensors, dim=0))
         events_under_features = []
-        for level in events_encoded:
-            events_under_feature = self.event_lstm(level, seq_len=events_under.shape[1])
+        for index, level in enumerate(events_encoded):
+            events_under_feature = self.event_lstm_list[index](level, seq_len=events_under.shape[1])
             events_under_features.append(events_under_feature)
 
         events_slices = []
@@ -389,8 +394,8 @@ class EHDR_network(nn.Module):
             tensors = [row[col] for row in events_slices]
             events_encoded.append(torch.stack(tensors, dim=0))
         events_over_features = []
-        for level in events_encoded:
-            events_over_feature = self.event_lstm(level, seq_len=events_over.shape[1])
+        for index, level in enumerate(events_encoded):
+            events_over_feature = self.event_lstm_list[index](level, seq_len=events_over.shape[1])
             events_over_features.append(events_over_feature)
 
         under_exposure_alignment = self.feature_alignment(under_exposure_feature, reference_feature,
