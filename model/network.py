@@ -315,6 +315,7 @@ class SpatialAttention(nn.Module):
         self.spatial_attn_add2 = nn.Conv2d(num_feat, num_feat, 1)
 
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
 
     def forward(self, pairwise_fusion, exposure_list):
         attn = self.lrelu(self.spatial_attn1(torch.cat([exposure_list[1], exposure_list[0], exposure_list[2]], dim=1)))
