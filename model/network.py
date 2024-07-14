@@ -266,12 +266,15 @@ class PairwiseAttention(nn.Module):
     def __init__(self, num_feat=64):
         super(PairwiseAttention, self).__init__()
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
-        self.weights_cal = nn.Sequential(
+        weights_cal = nn.Sequential(
             nn.Conv2d(num_feat * 2, 64, 3, 1, 1),
             self.lrelu,
             nn.Conv2d(64, 64, 3, 1, 1),
             nn.Sigmoid()
         )
+        self.weights_cal_under = weights_cal
+        self.weights_cal_ref = weights_cal
+        self.weights_cal_over = weights_cal
 
     def forward(self, exposure_list):
         """The first fusion method.
@@ -284,10 +287,9 @@ class PairwiseAttention(nn.Module):
         Returns:
             Tensor: Pairwise fused features.
         """
-        under_exposure_weights = self.weights_cal(self.conv1(torch.cat([exposure_list[0], exposure_list[1]], dim=1)))
-        reference_exposure_weights = self.weights_cal(
-            self.conv1(torch.cat([exposure_list[0], exposure_list[0]], dim=1)))
-        over_exposure_weights = self.weights_cal(self.conv1(torch.cat([exposure_list[0], exposure_list[2]], dim=1)))
+        under_exposure_weights = self.weights_cal_under(torch.cat([exposure_list[0], exposure_list[1]], dim=1))
+        reference_exposure_weights = self.weights_cal_ref(torch.cat([exposure_list[0], exposure_list[0]], dim=1))
+        over_exposure_weights = self.weights_cal_over(torch.cat([exposure_list[0], exposure_list[2]], dim=1))
 
         pairwise_fusion = under_exposure_weights * exposure_list[1] + reference_exposure_weights * exposure_list[
             0] + over_exposure_weights * exposure_list[2]
@@ -349,11 +351,13 @@ class EHDR_network(nn.Module):
         self.event_encoder = Encoder(input_channels=5)
         event_lstm_1 = LSTMEvent(shape=event_shape, input_channels=64, filter_size=3, num_features=64)
         event_lstm_2 = LSTMEvent(shape=tuple(int(x / 2) for x in event_shape), input_channels=64, filter_size=3,
-                                      num_features=64)
+                                 num_features=64)
         event_lstm_3 = LSTMEvent(shape=tuple(int(x / 4) for x in event_shape), input_channels=64, filter_size=3,
-                                      num_features=64)
+                                 num_features=64)
         self.event_lstm_list = nn.ModuleList([event_lstm_1, event_lstm_2, event_lstm_3])
-        self.feature_alignment = PCDAlignment(num_feat=64)
+        under_feature_alignment = PCDAlignment(num_feat=64)
+        over_feature_alignment = PCDAlignment(num_feat=64)
+        self.feature_alignment_list = nn.ModuleList([under_feature_alignment, over_feature_alignment])
         self.pairwise_attention = PairwiseAttention(num_feat=64)
         self.spatial_attention = SpatialAttention(num_feat=64, num_frame=3)
         self.reconstruction = ReconstructionModule()
@@ -398,9 +402,10 @@ class EHDR_network(nn.Module):
             events_over_feature = self.event_lstm_list[index](level, seq_len=events_over.shape[1])
             events_over_features.append(events_over_feature)
 
-        under_exposure_alignment = self.feature_alignment(under_exposure_feature, reference_feature,
-                                                          events_under_features)
-        over_exposure_alignment = self.feature_alignment(over_exposure_feature, reference_feature, events_over_features)
+        under_exposure_alignment = self.feature_alignment_list[0](under_exposure_feature, reference_feature,
+                                                                  events_under_features)
+        over_exposure_alignment = self.feature_alignment_list[1](over_exposure_feature, reference_feature,
+                                                                 events_over_features)
         exposure_list = [reference_feature, under_exposure_alignment, over_exposure_alignment]
         pairwise_fusion_feature = self.pairwise_attention(exposure_list)
         all_fusion_alignment = self.spatial_attention(pairwise_fusion_feature, exposure_list)
