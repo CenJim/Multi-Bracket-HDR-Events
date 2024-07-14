@@ -317,7 +317,7 @@ class SpatialAttention(nn.Module):
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
 
     def forward(self, pairwise_fusion, exposure_list):
-        attn = self.lrelu(self.attn1(torch.cat([exposure_list[1], exposure_list[0], exposure_list[2]], dim=1)))
+        attn = self.lrelu(self.spatial_attn1(torch.cat([exposure_list[1], exposure_list[0], exposure_list[2]], dim=1)))
         attn_max = self.max_pool(attn)
         attn_avg = self.avg_pool(attn)
         attn = self.lrelu(
