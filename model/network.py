@@ -370,13 +370,13 @@ class EHDR_network(nn.Module):
 
         events_slices = []
         for i in range(events_under.size(1)):
-            events_slices.append(self.frame_encoder(events_under[:, i, :, :, :]))
+            events_slices.append(self.event_encoder(events_under[:, i, :, :, :]))
         events_encoded = torch.stack(events_slices, dim=1)
         events_under_feature = self.event_lstm(events_encoded, seq_len=events_under.shape(1))
 
         events_slices = []
         for i in range(events_under.size(1)):
-            events_slices.append(self.frame_encoder(events_over[:, i, :, :, :]))
+            events_slices.append(self.event_encoder(events_over[:, i, :, :, :]))
         events_encoded = torch.stack(events_slices, dim=1)
         events_over_feature = self.event_lstm(events_encoded, seq_len=events_over.shape(1))
 
