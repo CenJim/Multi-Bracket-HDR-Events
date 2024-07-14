@@ -374,22 +374,22 @@ class EHDR_network(nn.Module):
         events_encoded = []
         for col in range(3):
             tensors = [row[col] for row in events_slices]
-            events_encoded.append(torch.stack(tensors, dim=1))
+            events_encoded.append(torch.stack(tensors, dim=0))
         events_under_features = []
         for level in events_encoded:
             events_under_feature = self.event_lstm(level, seq_len=events_under.shape[1])
             events_under_features.append(events_under_feature)
 
         events_slices = []
-        for i in range(events_under.size(1)):
+        for i in range(events_over.size(1)):
             events_slices.append(self.event_encoder(events_over[:, i, :, :, :]))
         events_encoded = []
         for col in range(3):
             tensors = [row[col] for row in events_slices]
-            events_encoded.append(torch.stack(tensors, dim=1))
+            events_encoded.append(torch.stack(tensors, dim=0))
         events_over_features = []
         for level in events_encoded:
-            events_over_feature = self.event_lstm(level, seq_len=events_under.shape[1])
+            events_over_feature = self.event_lstm(level, seq_len=events_over.shape[1])
             events_over_features.append(events_over_feature)
 
         under_exposure_alignment = self.feature_alignment(under_exposure_feature, reference_feature,
