@@ -1,6 +1,7 @@
 import argparse
 import copy
 import random
+import time
 
 import torch
 import torchvision.transforms as transforms
@@ -178,6 +179,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # Training loop
+    start_time = time.time()
     model.train()
     for epoch in range(epochs):
         for i, (ldr_1, ldr_2, ldr_3, events_1, events_2, hdr) in enumerate(dataloader):
@@ -204,6 +206,12 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
         scheduler.step()
         current_lr = scheduler.get_last_lr()[0]
         print(f'Epoch {epoch + 1}, Current learning rate: {current_lr}')
+
+    end_time = time.time()
+    total_time = end_time - start_time
+    hours, rem = divmod(total_time, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print(f"Training complete! Total time: {int(hours):04}:{int(minutes):02}:{int(seconds):02}")
     # 保存训练好的模型
     model_path = 'pretrained_models/EHDR.pth'
     torch.save(model.state_dict(), model_path)
