@@ -167,6 +167,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     model.train()
     for epoch in range(epochs):
         for i, (ldr_1, ldr_2, ldr_3, events_1, events_2, hdr) in enumerate(dataloader):
+            print(f'num of iteration: {i}')
             ldr_1, ldr_2, ldr_3, events_1, events_2, hdr = ldr_1.to(device), ldr_2.to(device), ldr_3.to(
                 device), events_1.to(device), events_2.to(device), hdr.to(device)
 
