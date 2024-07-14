@@ -352,7 +352,7 @@ class EHDR_network(nn.Module):
                                       num_features=64)
         event_lstm_3 = LSTMEvent(shape=tuple(x / 4 for x in event_shape), input_channels=64, filter_size=3,
                                       num_features=64)
-        self.event_lstm_list = [event_lstm_1, event_lstm_2, event_lstm_3]
+        self.event_lstm_list = nn.ModuleList([event_lstm_1, event_lstm_2, event_lstm_3])
         self.feature_alignment = PCDAlignment(num_feat=64)
         self.pairwise_attention = PairwiseAttention(num_feat=64)
         self.spatial_attention = SpatialAttention(num_feat=64, num_frame=3)
