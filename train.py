@@ -4,6 +4,7 @@ import random
 
 import torch
 import torchvision.transforms as transforms
+import torchvision.transforms.functional
 from torch.optim.lr_scheduler import StepLR
 from torchvision.transforms import functional as TF
 import torch.nn as nn
@@ -55,6 +56,7 @@ class SequenceDataset(Dataset):
                                     os.path.join(events_folder, events_files_2[index]),
                                     os.path.join(hdr_image_folder, hdr_image_file)))
         print(f'length of the groups: {len(self.groups)}')
+
     def __len__(self):
         return len(self.groups)
 
@@ -104,11 +106,20 @@ class CombinedLoss(nn.Module):
         self.l1_loss = nn.L1Loss()
 
     def forward(self, pred, target):
-        lpips_value = self.lpips_loss(pred, target)
+        lpips_value = torch.mean(self.lpips_loss(pred, target))
         l1_value = self.l1_loss(pred, target)
         print(f'lpips_value: {lpips_value}')
         print(f'l1_value: {l1_value}')
-        return np.mean(lpips_value + l1_value)
+        return lpips_value + l1_value
+
+
+class RandomRotate90:
+    def __init__(self):
+        self.angles = [0, 90, 180, 270]
+
+    def __call__(self, x):
+        angle = random.choice(self.angles)  # 随机选择一个角度
+        return transforms.functional.rotate(x, angle)  # 应用旋转
 
 
 class RandomTransform:
@@ -116,7 +127,7 @@ class RandomTransform:
     def __init__(self):
         self.transform = transforms.Compose([
             transforms.RandomResizedCrop(size=256, scale=(0.5, 1.0), ratio=(1.0, 1.0)),
-            transforms.RandomRotation(90, expand=False),
+            RandomRotate90(),
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
             # transforms.Lambda(lambda x: x[torch.randperm(3)])
