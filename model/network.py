@@ -57,7 +57,8 @@ class CLSTM_cell(nn.Module):
                                 self.shape[1]).cuda()
             else:
                 x = inputs[index, ...]
-
+            print("Shape of x:", x.shape)
+            print("Shape of hx:", hx.shape)
             combined = torch.cat((x, hx), 1)
             gates = self.conv(combined)  # gates: S, num_features*4, H, W
             # it should return 4 tensors: i,f,g,o
