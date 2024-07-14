@@ -105,7 +105,7 @@ class LSTMEvent(nn.Module):
         super(LSTMEvent, self).__init__()
         self.convLSTM = CLSTM_cell(shape, input_channels, filter_size, num_features)
 
-    def forward(self, inputs, hidden_state, seq_len):
+    def forward(self, inputs=None, hidden_state=None, seq_len=10):
         hidden_outputs, (h_output, c_output) = self.convLSTM(inputs, hidden_state, seq_len)
         return h_output
 
