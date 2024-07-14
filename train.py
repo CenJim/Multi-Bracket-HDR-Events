@@ -155,6 +155,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     optimizer = Adam(model.parameters(), lr=learning_rate)
     scheduler = StepLR(optimizer, step_size=15, gamma=0.5)
     loss_fun = CombinedLoss()
+    loss_fun.to(device)
 
     # Data loading and transformations
 
@@ -172,7 +173,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
                 device), events_1.to(device), events_2.to(device), hdr.to(device)
 
             optimizer.zero_grad()
-            output = model(ldr_2, ldr_1, ldr_3, events_1, events_2)  # model might need modification to handle states
+            output = model(ldr_2, ldr_1, ldr_3, events_1, events_2)
 
             if (i + 1) % time_steps == 0:
                 loss = loss_fun(output, hdr)
