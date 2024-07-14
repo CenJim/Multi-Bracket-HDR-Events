@@ -346,7 +346,7 @@ class EHDR_network(nn.Module):
         super(EHDR_network, self).__init__()
         self.frame_encoder = Encoder(input_channels=6)
         self.event_encoder = Encoder(input_channels=5)
-        self.event_lstm = LSTMEvent(shape=event_shape, input_channels=5, filter_size=3, num_features=64)
+        self.event_lstm = LSTMEvent(shape=event_shape, input_channels=64, filter_size=3, num_features=64)
         self.feature_alignment = PCDAlignment(num_feat=64)
         self.pairwise_attention = PairwiseAttention(num_feat=64)
         self.spatial_attention = SpatialAttention(num_feat=64, num_frame=3)
