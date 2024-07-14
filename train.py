@@ -144,14 +144,14 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     epochs = 60
     batch_size = 4
     learning_rate = 1e-4
-    crop_size = 128
+    crop_size = 256
     time_steps = 1  # Calculate loss every 5 time steps
     # kwargs = {'event_shape': (height, width), 'num_feat': 64, 'num_frame': 3}
     loss_value = 0
 
     # Network
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = EHDR_network(event_shape=(height, width), num_feat=64, num_frame=3).to(device)
+    model = EHDR_network(event_shape=(crop_size, crop_size), num_feat=64, num_frame=3).to(device)
     optimizer = Adam(model.parameters(), lr=learning_rate)
     scheduler = StepLR(optimizer, step_size=15, gamma=0.5)
     loss_fun = CombinedLoss()
