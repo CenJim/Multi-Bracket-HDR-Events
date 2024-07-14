@@ -362,7 +362,7 @@ class EHDR_network(nn.Module):
         self.pairwise_attention = PairwiseAttention(num_feat=64)
         self.spatial_attention = SpatialAttention(num_feat=64, num_frame=3)
         self.reconstruction = ReconstructionModule()
-        self.decode = nn.Conv2d(64, 3, 3, 1, 1)
+        self.decode = nn.Conv2d(128, 3, 3, 1, 1)
 
     def forward(self, reference, under_exposure, over_exposure, events_under, events_over):
         """The whole network
