@@ -411,6 +411,6 @@ class EHDR_network(nn.Module):
         pairwise_fusion_feature = self.pairwise_attention(exposure_list)
         all_fusion_alignment = self.spatial_attention(pairwise_fusion_feature, exposure_list)
         reconstruction = self.reconstruction(all_fusion_alignment)
-        output = self.decode(torch.cat([reconstruction, reference_feature], dim=1))
+        output = self.decode(torch.cat([reconstruction, reference_feature[0]], dim=1))
 
         return output
