@@ -406,7 +406,7 @@ class EHDR_network(nn.Module):
                                                                   events_under_features)
         over_exposure_alignment = self.feature_alignment_list[1](over_exposure_feature, reference_feature,
                                                                  events_over_features)
-        exposure_list = [reference_feature, under_exposure_alignment, over_exposure_alignment]
+        exposure_list = [reference_feature[0], under_exposure_alignment, over_exposure_alignment]
         pairwise_fusion_feature = self.pairwise_attention(exposure_list)
         all_fusion_alignment = self.spatial_attention(pairwise_fusion_feature, exposure_list)
         reconstruction = self.reconstruction(all_fusion_alignment)
