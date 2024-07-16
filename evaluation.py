@@ -22,11 +22,11 @@ def data_load(group, device):
             events_2.append(data[key])
 
     # 转换输入数据为torch.Tensor
-    ldr_image_1_tensor = torch.from_numpy(ldr_image_1).float().unsqueeze(0).to(device)
-    ldr_image_2_tensor = torch.from_numpy(ldr_image_2).float().unsqueeze(0).to(device)
-    ldr_image_3_tensor = torch.from_numpy(ldr_image_3).float().unsqueeze(0).to(device)
-    events_1_tensor = torch.from_numpy(np.array(events_1)).float().unsqueeze(0).to(device)
-    events_2_tensor = torch.from_numpy(np.array(events_2)).float().unsqueeze(0).to(device)
+    ldr_image_1_tensor = torch.from_numpy(ldr_image_1[:, :468, :]).float().unsqueeze(0).to(device)
+    ldr_image_2_tensor = torch.from_numpy(ldr_image_2[:, :468, :]).float().unsqueeze(0).to(device)
+    ldr_image_3_tensor = torch.from_numpy(ldr_image_3[:, :468, :]).float().unsqueeze(0).to(device)
+    events_1_tensor = torch.from_numpy(np.array(events_1)[:, :, :468, :]).float().unsqueeze(0).to(device)
+    events_2_tensor = torch.from_numpy(np.array(events_2)[:, :, :468, :]).float().unsqueeze(0).to(device)
 
     return ldr_image_1_tensor, ldr_image_2_tensor, ldr_image_3_tensor, events_1_tensor, events_2_tensor
 
