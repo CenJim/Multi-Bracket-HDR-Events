@@ -51,7 +51,7 @@ def main(model_name: str, pretrain_models: str, input_path: str, save_path: str)
     with torch.no_grad():
         output = net(input_data[1], input_data[0], input_data[2], input_data[3],
                      input_data[4]).cpu().detach().numpy()
-    output = (output * 255).astype(np.uint8)
+    output = (output[0] * 255).astype(np.uint8)
     img = Image.fromarray(output, 'RGB')
     img.save(os.path.join(save_path, 'test.bmp'))
 
