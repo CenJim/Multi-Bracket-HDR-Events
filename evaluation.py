@@ -33,7 +33,8 @@ def data_load(group, device):
 def main(model_name: str, pretrain_models: str, input_path: str, save_path: str):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = eval(model_name)(event_shape=(469, 640), num_feat=64, num_frame=3).to(device)
-    net.load(pretrain_models)
+    state = torch.load(pretrain_models, device)
+    net.load_state_dict(state)
     os.path.join(input_path, 'ldr_images/000001_2.npy')
     reference_image = os.path.join(input_path, 'ldr_images/000001_2.npy')
     under_exposure = os.path.join(input_path, 'ldr_images/000000_1.npy')
