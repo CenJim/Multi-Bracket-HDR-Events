@@ -3,6 +3,7 @@ from model.network import EHDR_network
 from PIL import Image
 import numpy as np
 import torch
+import os
 
 
 def data_load(group, device):
@@ -21,26 +22,31 @@ def data_load(group, device):
 
     # 转换输入数据为torch.Tensor
     ldr_image_1_tensor = torch.from_numpy(ldr_image_1).float().unsqueeze(0).to(device)
-    ldr_image_2_tensor = torch.from_numpy(ldr_image_2).float().unsqueeze(0)
-    ldr_image_3_tensor = torch.from_numpy(ldr_image_3).float().unsqueeze(0)
-    events_1_tensor = torch.from_numpy(np.array(events_1)).float().unsqueeze(0)
-    events_2_tensor = torch.from_numpy(np.array(events_2)).float().unsqueeze(0)
+    ldr_image_2_tensor = torch.from_numpy(ldr_image_2).float().unsqueeze(0).to(device)
+    ldr_image_3_tensor = torch.from_numpy(ldr_image_3).float().unsqueeze(0).to(device)
+    events_1_tensor = torch.from_numpy(np.array(events_1)).float().unsqueeze(0).to(device)
+    events_2_tensor = torch.from_numpy(np.array(events_2)).float().unsqueeze(0).to(device)
 
-    return
+    return ldr_image_1_tensor, ldr_image_2_tensor, ldr_image_3_tensor, events_1_tensor, events_2_tensor
 
 
-def main(model_name: str, pretrain_models: str, save_path: str):
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+def main(model_name: str, pretrain_models: str, input_path: str, save_path: str):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = eval(model_name)(event_shape=(469, 640), num_feat=64, num_frame=3).to(device)
     net.load(pretrain_models)
-    reference_image = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000000/ldr_images/000001_2.npy'
-    under_exposure = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000000/ldr_images/000000_1.npy'
-    over_exposure = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000000/ldr_images/000002_3.npy'
-    events_under = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000000/events/000000_1.npz'
-    events_upper = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000000/events/000001_2.npz'
+    os.path.join(input_path, 'ldr_images/000001_2.npy')
+    reference_image = os.path.join(input_path, 'ldr_images/000001_2.npy')
+    under_exposure = os.path.join(input_path, 'ldr_images/000000_1.npy')
+    over_exposure = os.path.join(input_path, 'ldr_images/000002_3.npy')
+    events_under = os.path.join(input_path, 'events/000000_1.npz')
+    events_upper = os.path.join(input_path, 'events/000001_2.npz')
     group = (under_exposure, reference_image, over_exposure, events_under, events_upper)
-    input = data_load(group, device)
-    output = net(reference_image, under_exposure, over_exposure, events_under, events_upper)
+    input_data = data_load(group, device)
+    output = net(input_data[1], input_data[0], input_data[2], input_data[3],
+                 input_data[4]).cpu().detach().numpy()
+    output = (output * 255).astype(np.uint8)
+    img = Image.fromarray(output, 'RGB')
+    img.save(os.path.join(save_path, 'test.bmp'))
 
 
 if __name__ == '__main__':
@@ -63,4 +69,5 @@ if __name__ == '__main__':
     model_name = 'EHDR_network'
     pretrain_models = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/EHDR.pth'
     save_path = './result'
-    main(model_name, pretrain_models, save_path)
+    input_path = '/Volumes/CenJim/train data/dataset/DSEC/train/train_sequences/sequence_0000000'
+    main(model_name, pretrain_models, input_path, save_path)
