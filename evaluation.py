@@ -69,5 +69,5 @@ if __name__ == '__main__':
     model_name = 'EHDR_network'
     pretrain_models = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/EHDR.pth'
     save_path = './result'
-    input_path = '/Volumes/CenJim/train data/dataset/DSEC/train/train_sequences/sequence_0000000'
+    input_path = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000000'
     main(model_name, pretrain_models, input_path, save_path)
