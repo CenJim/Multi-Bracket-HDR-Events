@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import torch
 import os
+import torch.nn as nn
 
 
 def data_load(group, device):
@@ -31,9 +32,11 @@ def data_load(group, device):
 
 
 def main(model_name: str, pretrain_models: str, input_path: str, save_path: str):
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
-    net = eval(model_name)(event_shape=(469, 640), num_feat=64, num_frame=3).to(device)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
+    net = eval(model_name)(event_shape=(469, 640), num_feat=64, num_frame=3)
+    net.eval()
+    net = nn.DataParallel(net).to(device)
     state = torch.load(pretrain_models, device)
     net.load_state_dict(state)
     os.path.join(input_path, 'ldr_images/000001_2.npy')
@@ -44,8 +47,9 @@ def main(model_name: str, pretrain_models: str, input_path: str, save_path: str)
     events_upper = os.path.join(input_path, 'events/000001_2.npz')
     group = (under_exposure, reference_image, over_exposure, events_under, events_upper)
     input_data = data_load(group, device)
-    output = net(input_data[1], input_data[0], input_data[2], input_data[3],
-                 input_data[4]).cpu().detach().numpy()
+    with torch.no_grad():
+        output = net(input_data[1], input_data[0], input_data[2], input_data[3],
+                     input_data[4]).cpu().detach().numpy()
     output = (output * 255).astype(np.uint8)
     img = Image.fromarray(output, 'RGB')
     img.save(os.path.join(save_path, 'test.bmp'))
