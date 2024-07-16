@@ -210,7 +210,7 @@ def get_voxel_grid(events, height, width, number_chunk, num_bins, device):
     for chunked_event in chunked_events:
         event_tensor = events_to_voxel_grid(chunked_event[:, 1], chunked_event[:, 2], chunked_event[:, 3],
                                             chunked_event[:, 0], voxel_grid, device)
-        event_tensor = event_tensor[:, :469, :]
+        event_tensor = event_tensor[:, :469, :].cpu()
         event_tensors.append(event_tensor)
     return event_tensors
 
@@ -244,7 +244,8 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
                 i += 1
         if j == 3:
             continue
-        voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_chunks, num_bins, device)
+        with torch.no_grad():
+            voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_chunks, num_bins, device)
         events_chunks.append(voxel_grid_tensors)
         if save_flag:
             if save_format == 'npy':
