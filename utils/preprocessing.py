@@ -252,7 +252,7 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
                     save_path = os.path.join(target_folder, f'{index:06}_{vg_index:06}.npy')
                     if voxel_grid_tensor.is_cuda:
                         voxel_grid_tensor.cpu()
-                    np.save(save_path, voxel_grid_tensor.numpy())
+                    np.save(save_path, voxel_grid_tensor.cpu().numpy())
                     # print(f'save {index:06}_{vg_index:06}.pt to target_folder')
             elif save_format == 'npz':
 
@@ -260,7 +260,7 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
                 for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
                     if voxel_grid_tensor.is_cuda:
                         voxel_grid_tensor.cpu()
-                    voxel_grid_tensors_between[f'{vg_index:06}'] = (voxel_grid_tensor.numpy())
+                    voxel_grid_tensors_between[f'{vg_index:06}'] = (voxel_grid_tensor.cpu().numpy())
                     # print(f'Precessed events: {index:06}_{vg_index:06}')
                 save_path = os.path.join(target_folder, f'{index:06}_{j}.npz')
                 np.savez_compressed(save_path, **voxel_grid_tensors_between)
