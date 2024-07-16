@@ -31,7 +31,8 @@ def data_load(group, device):
 
 
 def main(model_name: str, pretrain_models: str, input_path: str, save_path: str):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     net = eval(model_name)(event_shape=(469, 640), num_feat=64, num_frame=3).to(device)
     state = torch.load(pretrain_models, device)
     net.load_state_dict(state)
