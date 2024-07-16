@@ -1,0 +1,133 @@
+/home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=AlexNet_Weights.IMAGENET1K_V1`. You can also use `weights=AlexNet_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/torchvision/transforms/functional.py:1603: UserWarning: The default value of the antialias parameter of all the resizing transforms (Resize(), RandomResizedCrop(), etc.) will change from None to True in v0.17, in order to be consistent across the PIL and Tensor backends. To suppress this warning, directly pass antialias=True (recommended, future default), antialias=None (current default, which means False for Tensors and True for PIL), or antialias=False (only works on Tensors - PIL will still use antialiasing). This also applies if you are using the inference transforms from the models weights: update the call to weights.transforms(antialias=True).
+  warnings.warn(
+Setting up [LPIPS] perceptual loss: trunk [alex], v[0.1], spatial [off]
+Loading model from: /home/s2491540/pythonenvs/envs/snnrec/lib/python3.10/site-packages/lpips/weights/v0.1/alex.pth
+ldr image folder: /home/s2491540/dataset/DSEC/train_sequences/sequence_0000000/ldr_images
+length of the groups: 179
+length of dataset: 179
+Epoch 0, Iteration 0, Loss: 0.8348678946495056
+Epoch 1, Current learning rate: 0.0001
+Epoch 1, Iteration 0, Loss: 0.2584473788738251
+Epoch 2, Current learning rate: 0.0001
+Epoch 2, Iteration 0, Loss: 0.1999368518590927
+Epoch 3, Current learning rate: 0.0001
+Epoch 3, Iteration 0, Loss: 0.09744471311569214
+Epoch 4, Current learning rate: 0.0001
+Epoch 4, Iteration 0, Loss: 0.08585719764232635
+Epoch 5, Current learning rate: 0.0001
+Epoch 5, Iteration 0, Loss: 0.0851445272564888
+Epoch 6, Current learning rate: 0.0001
+Epoch 6, Iteration 0, Loss: 0.09339233487844467
+Epoch 7, Current learning rate: 0.0001
+Epoch 7, Iteration 0, Loss: 0.0640537440776825
+Epoch 8, Current learning rate: 0.0001
+Epoch 8, Iteration 0, Loss: 0.07083651423454285
+Epoch 9, Current learning rate: 0.0001
+Epoch 9, Iteration 0, Loss: 0.04466448724269867
+Epoch 10, Current learning rate: 0.0001
+Epoch 10, Iteration 0, Loss: 0.04551652446389198
+Epoch 11, Current learning rate: 0.0001
+Epoch 11, Iteration 0, Loss: 0.036846742033958435
+Epoch 12, Current learning rate: 0.0001
+Epoch 12, Iteration 0, Loss: 0.061832938343286514
+Epoch 13, Current learning rate: 0.0001
+Epoch 13, Iteration 0, Loss: 0.03714960068464279
+Epoch 14, Current learning rate: 0.0001
+Epoch 14, Iteration 0, Loss: 0.04334856942296028
+Epoch 15, Current learning rate: 5e-05
+Epoch 15, Iteration 0, Loss: 0.04351268708705902
+Epoch 16, Current learning rate: 5e-05
+Epoch 16, Iteration 0, Loss: 0.04964253306388855
+Epoch 17, Current learning rate: 5e-05
+Epoch 17, Iteration 0, Loss: 0.032388828694820404
+Epoch 18, Current learning rate: 5e-05
+Epoch 18, Iteration 0, Loss: 0.035398103296756744
+Epoch 19, Current learning rate: 5e-05
+Epoch 19, Iteration 0, Loss: 0.031841352581977844
+Epoch 20, Current learning rate: 5e-05
+Epoch 20, Iteration 0, Loss: 0.02774822525680065
+Epoch 21, Current learning rate: 5e-05
+Epoch 21, Iteration 0, Loss: 0.03788114711642265
+Epoch 22, Current learning rate: 5e-05
+Epoch 22, Iteration 0, Loss: 0.04136811941862106
+Epoch 23, Current learning rate: 5e-05
+Epoch 23, Iteration 0, Loss: 0.03335220366716385
+Epoch 24, Current learning rate: 5e-05
+Epoch 24, Iteration 0, Loss: 0.03960234671831131
+Epoch 25, Current learning rate: 5e-05
+Epoch 25, Iteration 0, Loss: 0.03886810690164566
+Epoch 26, Current learning rate: 5e-05
+Epoch 26, Iteration 0, Loss: 0.02913171797990799
+Epoch 27, Current learning rate: 5e-05
+Epoch 27, Iteration 0, Loss: 0.03052298165857792
+Epoch 28, Current learning rate: 5e-05
+Epoch 28, Iteration 0, Loss: 0.027594614773988724
+Epoch 29, Current learning rate: 5e-05
+Epoch 29, Iteration 0, Loss: 0.027240289375185966
+Epoch 30, Current learning rate: 2.5e-05
+Epoch 30, Iteration 0, Loss: 0.03127153590321541
+Epoch 31, Current learning rate: 2.5e-05
+Epoch 31, Iteration 0, Loss: 0.024059846997261047
+Epoch 32, Current learning rate: 2.5e-05
+Epoch 32, Iteration 0, Loss: 0.02807876095175743
+Epoch 33, Current learning rate: 2.5e-05
+Epoch 33, Iteration 0, Loss: 0.024366311728954315
+Epoch 34, Current learning rate: 2.5e-05
+Epoch 34, Iteration 0, Loss: 0.027927346527576447
+Epoch 35, Current learning rate: 2.5e-05
+Epoch 35, Iteration 0, Loss: 0.04334298521280289
+Epoch 36, Current learning rate: 2.5e-05
+Epoch 36, Iteration 0, Loss: 0.03290516510605812
+Epoch 37, Current learning rate: 2.5e-05
+Epoch 37, Iteration 0, Loss: 0.03145543858408928
+Epoch 38, Current learning rate: 2.5e-05
+Epoch 38, Iteration 0, Loss: 0.0324956476688385
+Epoch 39, Current learning rate: 2.5e-05
+Epoch 39, Iteration 0, Loss: 0.025131411850452423
+Epoch 40, Current learning rate: 2.5e-05
+Epoch 40, Iteration 0, Loss: 0.022234026342630386
+Epoch 41, Current learning rate: 2.5e-05
+Epoch 41, Iteration 0, Loss: 0.022586170583963394
+Epoch 42, Current learning rate: 2.5e-05
+Epoch 42, Iteration 0, Loss: 0.025599339976906776
+Epoch 43, Current learning rate: 2.5e-05
+Epoch 43, Iteration 0, Loss: 0.019816115498542786
+Epoch 44, Current learning rate: 2.5e-05
+Epoch 44, Iteration 0, Loss: 0.033900633454322815
+Epoch 45, Current learning rate: 1.25e-05
+Epoch 45, Iteration 0, Loss: 0.03483673185110092
+Epoch 46, Current learning rate: 1.25e-05
+Epoch 46, Iteration 0, Loss: 0.02406211569905281
+Epoch 47, Current learning rate: 1.25e-05
+Epoch 47, Iteration 0, Loss: 0.020526638254523277
+Epoch 48, Current learning rate: 1.25e-05
+Epoch 48, Iteration 0, Loss: 0.021030399948358536
+Epoch 49, Current learning rate: 1.25e-05
+Epoch 49, Iteration 0, Loss: 0.024156175553798676
+Epoch 50, Current learning rate: 1.25e-05
+Epoch 50, Iteration 0, Loss: 0.022295109927654266
+Epoch 51, Current learning rate: 1.25e-05
+Epoch 51, Iteration 0, Loss: 0.03006788343191147
+Epoch 52, Current learning rate: 1.25e-05
+Epoch 52, Iteration 0, Loss: 0.03068251721560955
+Epoch 53, Current learning rate: 1.25e-05
+Epoch 53, Iteration 0, Loss: 0.020359188318252563
+Epoch 54, Current learning rate: 1.25e-05
+Epoch 54, Iteration 0, Loss: 0.021547559648752213
+Epoch 55, Current learning rate: 1.25e-05
+Epoch 55, Iteration 0, Loss: 0.02807493507862091
+Epoch 56, Current learning rate: 1.25e-05
+Epoch 56, Iteration 0, Loss: 0.031912826001644135
+Epoch 57, Current learning rate: 1.25e-05
+Epoch 57, Iteration 0, Loss: 0.03589939326047897
+Epoch 58, Current learning rate: 1.25e-05
+Epoch 58, Iteration 0, Loss: 0.02295616641640663
+Epoch 59, Current learning rate: 1.25e-05
+Epoch 59, Iteration 0, Loss: 0.02846093848347664
+Epoch 60, Current learning rate: 6.25e-06
+Training complete! Total time: 0002:54:35
+Training complete!
