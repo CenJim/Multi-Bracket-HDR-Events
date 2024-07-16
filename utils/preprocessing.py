@@ -299,18 +299,18 @@ if __name__ == '__main__':
     #     cv2.destroyAllWindows()
 
     # # process image and save to a path
-    image_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images'
-    output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images processed'
-    supervised_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images supervised'
-    image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
-    process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
+    # image_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_d/Interlaken Left Images'
+    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train_sequences/sequence_0000001/ldr_images'
+    # supervised_folder = '/Volumes/CenJim/train data/dataset/DSEC/train_sequences/sequence_0000001/hdr_images'
+    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_d/Interlaken Image Exposure Left.txt'
+    # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process events and save to a path
-    # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken events left'
-    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Events processed'
-    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Exposure Left.txt'
-    # # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left'
-    # # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left processed'
-    # # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-    # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
+    event_folder = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_events_left'
+    output_folder = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000001/events'
+    image_timestamps_path = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_Image_Exposure_Left.txt'
+    # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left'
+    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left processed'
+    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
