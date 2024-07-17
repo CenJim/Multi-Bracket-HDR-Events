@@ -38,6 +38,16 @@ def get_dataset(file_path, chunk_flag=False, width=None, height=None, num_events
             return dataset
 
 
+def get_dataset_shape(file_path):
+    # open HDF5 file
+    with h5py.File(os.path.join(file_path, 'events.h5'), 'r') as f:
+        # obtain the t x y p
+        dataset = np.zeros(shape=(len(f['events/p']), 1))
+        dataset[:, 0] = f['events/t'][()]
+
+    return dataset.shape
+
+
 def get_event_offset(file_path):
     with h5py.File(os.path.join(file_path, 'events.h5'), 'r') as f:
         # obtain the offset
