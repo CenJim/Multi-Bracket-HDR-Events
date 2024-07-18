@@ -1,8 +1,11 @@
 import numpy as np
 import cv2
 from utils.preprocessing import read_timestamps_from_file
-from utils.vision_quality_compare import calculate_psnr
+from utils.vision_quality_compare import calculate_psnr, calculate_mse, calculate_ssim, calculate_lpips
 from utils.load_hdf import get_dataset_shape
+from PIL import Image
+import os
+
 
 def check_npy(data_path, data_type: str = 'npy'):
     data = []
@@ -35,8 +38,31 @@ def npy_to_image(data_path):
     #     cv2.destroyAllWindows()
 
 
+def crop_last_row(image_path, output_path):
+    # 打开图片
+    with Image.open(image_path) as img:
+        # 获取图片尺寸
+        width, height = img.size
+        # 设置裁剪区域，裁剪掉最后一行像素
+        cropped_image = img.crop((0, 0, width, height - 1))
+        # 保存裁剪后的图片到新路径
+        cropped_image.save(output_path)
+
+
+def process_images_crop(folder_path):
+    # 遍历文件夹中的所有文件
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
+            original_file_path = os.path.join(folder_path, filename)
+            new_file_path = os.path.join(folder_path, f"{os.path.splitext(filename)[0]}_cropped{os.path.splitext(filename)[1]}")
+            crop_last_row(original_file_path, new_file_path)
+            print(f"Processed {filename}, saved as {new_file_path.split('/')[-1]}")
+
+
 if __name__ == '__main__':
-    # img_path = ''
-    # correct_img_path = ''
-    # calculate_psnr(img_path, correct_img_path)
-    print(get_dataset_shape('/home/s2491540/dataset/DSEC/train/interlaken_00_c/Interlaken_events_left'))
+    img_path = '../temp/000001_2_cropped.png'
+    correct_img_path = '../temp/hdr_cropped.png'
+    print(f'PSNR: {calculate_psnr(img_path, correct_img_path, False)}')
+    print(f'MSE: {calculate_mse(img_path, correct_img_path, False)}')
+    print(f'SSIM: {calculate_ssim(img_path, correct_img_path, False)}')
+    print(f'LPIPS: {calculate_lpips(img_path, correct_img_path, False)}')

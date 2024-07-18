@@ -69,7 +69,10 @@ def calculate_ssim(img_1_dir, img_2_dir, gray_flag: bool = True):
     # else:
     #     img_correct = cv2.imread(img_1, cv2.IMREAD_COLOR)
     #     img_compared = cv2.imread(img_2, cv2.IMREAD_COLOR)
-    ssim = compare_ssim(img_correct, img_compared)
+    if gray_flag:
+        ssim = compare_ssim(img_correct, img_compared)
+    else:
+        ssim = compare_ssim(img_correct, img_compared, channel_axis=-1)
     return ssim
 
 
