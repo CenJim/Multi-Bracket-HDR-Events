@@ -5,6 +5,9 @@ from utils.vision_quality_compare import calculate_psnr, calculate_mse, calculat
 from utils.load_hdf import get_dataset_shape
 from PIL import Image
 import os
+import torch
+import torchvision.models as models
+from model.network import EHDR_network
 
 
 def check_npy(data_path, data_type: str = 'npy'):
@@ -59,10 +62,18 @@ def process_images_crop(folder_path):
             print(f"Processed {filename}, saved as {new_file_path.split('/')[-1]}")
 
 
+def get_model_param_num(model):
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total number of trainable parameters: {total_params}")
+
+
 if __name__ == '__main__':
-    img_path = '../temp/000001_2_cropped.png'
-    correct_img_path = '../temp/hdr_cropped.png'
-    print(f'PSNR: {calculate_psnr(img_path, correct_img_path, False)}')
-    print(f'MSE: {calculate_mse(img_path, correct_img_path, False)}')
-    print(f'SSIM: {calculate_ssim(img_path, correct_img_path, False)}')
-    print(f'LPIPS: {calculate_lpips(img_path, correct_img_path, False)}')
+    # img_path = '../temp/000001_2_cropped.png'
+    # correct_img_path = '../temp/hdr_cropped.png'
+    # print(f'PSNR: {calculate_psnr(img_path, correct_img_path, False)}')
+    # print(f'MSE: {calculate_mse(img_path, correct_img_path, False)}')
+    # print(f'SSIM: {calculate_ssim(img_path, correct_img_path, False)}')
+    # print(f'LPIPS: {calculate_lpips(img_path, correct_img_path, False)}')
+    model = EHDR_network(event_shape=(256, 256), num_feat=64, num_frame=3)
+    get_model_param_num(model)
+
