@@ -7,7 +7,10 @@ from PIL import Image
 import os
 import torch
 import torchvision.models as models
-from model.network import EHDR_network
+# from model.network import EHDR_network
+from PIL import Image
+import imageio as iio
+import utils.HDR as hdr
 
 
 def check_npy(data_path, data_type: str = 'npy'):
@@ -57,7 +60,8 @@ def process_images_crop(folder_path):
     for filename in os.listdir(folder_path):
         if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
             original_file_path = os.path.join(folder_path, filename)
-            new_file_path = os.path.join(folder_path, f"{os.path.splitext(filename)[0]}_cropped{os.path.splitext(filename)[1]}")
+            new_file_path = os.path.join(folder_path,
+                                         f"{os.path.splitext(filename)[0]}_cropped{os.path.splitext(filename)[1]}")
             crop_last_row(original_file_path, new_file_path)
             print(f"Processed {filename}, saved as {new_file_path.split('/')[-1]}")
 
@@ -67,13 +71,29 @@ def get_model_param_num(model):
     print(f"Total number of trainable parameters: {total_params}")
 
 
-if __name__ == '__main__':
-    # img_path = '../temp/000001_2_cropped.png'
-    # correct_img_path = '../temp/hdr_cropped.png'
-    # print(f'PSNR: {calculate_psnr(img_path, correct_img_path, False)}')
-    # print(f'MSE: {calculate_mse(img_path, correct_img_path, False)}')
-    # print(f'SSIM: {calculate_ssim(img_path, correct_img_path, False)}')
-    # print(f'LPIPS: {calculate_lpips(img_path, correct_img_path, False)}')
-    model = EHDR_network(event_shape=(256, 256), num_feat=64, num_frame=3)
-    get_model_param_num(model)
+def image_quality(img_path, correct_img_path):
+    print(f'PSNR: {calculate_psnr(img_path, correct_img_path, False)}')
+    print(f'MSE: {calculate_mse(img_path, correct_img_path, False)}')
+    print(f'SSIM: {calculate_ssim(img_path, correct_img_path, False)}')
+    print(f'LPIPS: {calculate_lpips(img_path, correct_img_path, False)}')
 
+
+def normalize_to_8_bit(img):
+    return (img * 255).astype('uint8')
+
+
+if __name__ == '__main__':
+    image_path = '/Volumes/CenJim/train data/dataset/HDM_HDR/smith_welding/smith_welding_249519.tif'
+    img = iio.v3.imread(image_path)
+    img = hdr.normalize_hdr(img, 16)
+    img = hdr.pq_2_linear(img)
+    img = hdr.rec2020_2_sRGB(img)
+    exposure_time = hdr.histogram_based_exposure(img, target_percentile=99, target_value=0.9, gamma=2.2, tol=0.01,
+                                                 max_iter=100)
+    img = hdr.change_exposure(img, 1)
+    img = hdr.apply_gamma(img, exposure_time, 2.2)
+    img = normalize_to_8_bit(img)  # 转换为0-255的整数范围
+    image = Image.fromarray(img)
+    image.save('temp/output_image_sRGB.png')
+    print(exposure_time)
+    print(img.shape)

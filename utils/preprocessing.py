@@ -9,6 +9,8 @@ from utils.load_hdf import get_dataset, get_event_offset, chunk_2d_array, chunk_
 from utils.representations import VoxelGrid
 import torch
 from PIL import Image
+import imageio as iio
+import utils.HDR as hdr
 
 
 def inverse_crf(Z, gamma=2.2):
@@ -149,6 +151,91 @@ def process_images(source_folder, target_folder, supervised_folder, exposure_tim
             if i == 2:
                 supervised_file = os.path.join(supervised_folder, os.path.splitext(base_name)[0] + '.pt')
                 torch.save(torch.from_numpy(image), supervised_file)
+
+    if save_format == 'npz':
+        npz_target_file = os.path.join(target_folder, 'all_processed_images.npz')
+        print('Saving processed npz')
+        np.savez_compressed(npz_target_file, **processed_images)
+        print(f"All processed images saved to {npz_target_file}")
+        npz_supervised_file = os.path.join(supervised_folder, 'all_supervised_image.npz')
+        print('Saving supervised npz')
+        np.savez_compressed(npz_supervised_file, **supervised_images)
+        print(f"All supervised images saved to {npz_supervised_file}")
+
+
+def process_hdr_images(source_folder, target_folder, supervised_folder, save_format: str = 'npy'):
+    """
+    遍历指定文件夹下的所有图片，对每个图片进行处理，并保存为.npy文件到新的文件夹。
+
+    :param source_folder: 包含原始图片的文件夹路径
+    :param target_folder: 保存.npy文件的目标文件夹路径
+    """
+    # 确保目标文件夹存在，如果不存在则创建
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+    if not os.path.exists(supervised_folder):
+        os.makedirs(supervised_folder)
+    processed_images = {}
+    supervised_images = {}
+    # 构建图片文件的搜索模式
+    search_pattern = os.path.join(source_folder, '*.tif')  # 图片是TIFF格式
+    image_files = glob.glob(search_pattern)
+
+    # 遍历所有图片文件
+    i = 0
+    for index, image_file in tqdm(enumerate(sorted(image_files)), total=len(image_files), desc='Processing images'):
+        if i >= 7:
+            i = 1
+        else:
+            i += 1
+
+        if 2 <= i <= 3 or 5 <= i <= 6:
+            continue
+
+        img = iio.v3.imread(image_file)
+        img = img[10:-10, 10:-10]
+        img_hdr = hdr.normalize_hdr(img, 16)
+        img = hdr.pq_2_linear(img_hdr)
+        exposure_time = hdr.histogram_based_exposure(img, target_percentile=99, target_value=0.9, gamma=2.2, tol=0.01,
+                                                     max_iter=100)
+        # 对图片进行特定操作
+        if i == 1:
+            img = hdr.change_exposure(img, 1 / 8)
+        elif i == 7:
+            img = hdr.change_exposure(img, 8)
+
+        img = hdr.apply_gamma(img, exposure_time, 2.2).astype(np.float16)
+        processed_image = concatenate_to_six_channels(img, exposure_time)
+
+        img_hdr = img_hdr.transpose((2, 0, 1))
+        processed_image = processed_image.transpose((2, 0, 1))
+        # 生成目标文件路径
+        base_name = os.path.basename(image_file)
+        if save_format == 'npy':
+            target_file = os.path.join(target_folder, os.path.splitext(base_name)[0] + f'_{i}.npz')
+
+            # 保存处理后的图片数据为.npy文件
+            np.savez_compressed(target_file, data=processed_image)
+            # print(f"Processed image saved to {target_file}")
+            if i == 4:
+                supervised_file = os.path.join(supervised_folder, os.path.splitext(base_name)[0] + '.npz')
+                np.savez_compressed(supervised_file, data=img_hdr)
+        elif save_format == 'npz':
+            base_name = os.path.basename(image_file)
+            key = os.path.splitext(base_name)[0] + f'_{i}'
+            processed_images[key] = processed_image
+            # print("Processed image: " + key)
+            if i == 4:
+                key = os.path.splitext(base_name)[0]
+                supervised_images[key] = img_hdr
+        else:
+            target_file = os.path.join(target_folder, os.path.splitext(base_name)[0] + f'_{i}.pt')
+            # 保存处理后的图片数据为.pt文件
+            torch.save(torch.from_numpy(processed_image), target_file)
+            # print(f"Processed image saved to {target_file}")
+            if i == 4:
+                supervised_file = os.path.join(supervised_folder, os.path.splitext(base_name)[0] + '.pt')
+                torch.save(torch.from_numpy(img_hdr), supervised_file)
 
     if save_format == 'npz':
         npz_target_file = os.path.join(target_folder, 'all_processed_images.npz')
@@ -306,12 +393,18 @@ if __name__ == '__main__':
     # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_d/Interlaken Image Exposure Left.txt'
     # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
+    # process HDR image and save to a path
+    image_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/showgirl_01'
+    output_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/sequences/showgirl_01/ldr_images'
+    supervised_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/sequences/showgirl_01/hdr_images'
+    process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
+
     # process events and save to a path
-    event_folder = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_events_left'
-    output_folder = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000001/events'
-    image_timestamps_path = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_Image_Exposure_Left.txt'
-    # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left'
-    # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left processed'
-    # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
+    # event_folder = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_events_left'
+    # output_folder = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000001/events'
+    # image_timestamps_path = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_Image_Exposure_Left.txt'
+    # # event_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left'
+    # # output_folder = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/DSEC Events Left processed'
+    # # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
