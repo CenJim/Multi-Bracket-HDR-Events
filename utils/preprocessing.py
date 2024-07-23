@@ -368,6 +368,85 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
     return events_chunks
 
 
+def get_dataset_npz(source_folder):
+    events_dict = np.load(source_folder)
+    dataset = np.zeros(shape=(len(events_dict['p']), 4))
+    dataset[:, 0] = events_dict['t']
+    dataset[:, 1] = events_dict['x']
+    dataset[:, 2] = events_dict['y']
+    dataset[:, 3] = events_dict['p']
+    return dataset
+
+
+def process_events_hdr(events_file, target_folder, image_timestamps, width, height, num_chunks, num_bins,
+                       device, save_flag: bool = False, save_format: str = 'npy'):
+    print('Loading the dataset...')
+    events_dataset = get_dataset_npz(events_file)
+    print('Dataset Loaded!')
+    exposure_timestamps_s = np.genfromtxt(image_timestamps)
+    exposure_timestamps = (exposure_timestamps_s * 1e9).astype("int64")
+    processed_events = {}
+    i = 0
+    events_length = len(events_dataset)
+    events_chunks = []
+    j = 0
+    for it, exposure_timestamp in tqdm(enumerate(exposure_timestamps[:-3:3]),
+                                          total=len(exposure_timestamps[:-3:3]),
+                                          desc='Events processing'):
+        index = it * 3
+        if j >= 3:
+            j = 1
+        else:
+            j += 1
+        events_chunk = []
+        while i < events_length:
+            if exposure_timestamp <= events_dataset[i][0] <= exposure_timestamps[index + 3]:
+                events_chunk.append(events_dataset[i])
+                i += 1
+            elif events_dataset[i][0] > exposure_timestamps[index + 3]:
+                break
+            else:
+                i += 1
+        if j == 3:
+            continue
+        print(index)
+        with torch.no_grad():
+            voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_chunks, num_bins, device)
+        events_chunks.append(voxel_grid_tensors)
+        if save_flag:
+            if save_format == 'npy':
+                for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
+                    save_path = os.path.join(target_folder, f'{index:06}_{vg_index:06}.npy')
+                    if voxel_grid_tensor.is_cuda:
+                        voxel_grid_tensor.cpu()
+                    np.save(save_path, voxel_grid_tensor.cpu().numpy())
+                    # print(f'save {index:06}_{vg_index:06}.pt to target_folder')
+            elif save_format == 'npz':
+
+                voxel_grid_tensors_between = {}
+                for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
+                    if voxel_grid_tensor.is_cuda:
+                        voxel_grid_tensor.cpu()
+                    voxel_grid_tensors_between[f'{vg_index:06}'] = (voxel_grid_tensor.cpu().numpy())
+                    # print(f'Precessed events: {index:06}_{vg_index:06}')
+                save_path = os.path.join(target_folder, f'{index:06}_{j}.npz')
+                np.savez_compressed(save_path, **voxel_grid_tensors_between)
+                # processed_events[key] = np.array(voxel_grid_tensors_between)
+            else:
+                for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
+                    save_path = os.path.join(target_folder, f'{index:06}_{vg_index:06}.pt')
+                    torch.save(voxel_grid_tensor, save_path)
+                    # print(f'save {index:06}_{vg_index:06}.pt to target_folder')
+
+    # if save_flag and save_format == 'npz':
+    #     target_file = os.path.join(target_folder, 'all_processed_events.npz')
+    #     print('Saving the npz file...')
+    #     np.savez_compressed(target_file, **processed_events)
+    #     print(f"All processed events saved to {target_file}")
+
+    return events_chunks
+
+
 if __name__ == '__main__':
     # image_path = '/Volumes/CenJim/train data/dataset/DSEC/train/interlaken_00_c/Interlaken Left Images/000000.png'
     # exposure_time = 0.034  # 曝光时间，根据需要调整
@@ -394,10 +473,10 @@ if __name__ == '__main__':
     # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process HDR image and save to a path
-    image_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/showgirl_01'
-    output_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/sequences/showgirl_01/ldr_images'
-    supervised_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/sequences/showgirl_01/hdr_images'
-    process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
+    # image_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/showgirl_01'
+    # output_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/sequences/showgirl_01/ldr_images'
+    # supervised_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/sequences/showgirl_01/hdr_images'
+    # process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
 
     # process events and save to a path
     # event_folder = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_events_left'
@@ -408,3 +487,10 @@ if __name__ == '__main__':
     # # image_timestamps_path = '/Volumes/CenJim/train data/dataset/DSEC/test/thun_01_a/Thun 01 A Image Exposure Left.txt'
     # device = "cuda" if torch.cuda.is_available() else "cpu"
     # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
+
+    # process hdr events and save to a path
+    event_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_events.npz'
+    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events'
+    image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 8, 5, device, True, 'npz')

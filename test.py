@@ -11,6 +11,7 @@ import torchvision.models as models
 from PIL import Image
 import imageio as iio
 import utils.HDR as hdr
+from utils.vid2e import generate_timestamps, generate_events_loop, print_events
 
 
 def check_npy(data_path, data_type: str = 'npy'):
@@ -82,7 +83,7 @@ def normalize_to_8_bit(img):
     return (img * 255).astype('uint8')
 
 
-if __name__ == '__main__':
+def test_hdr():
     image_path = '/Volumes/CenJim/train data/dataset/HDM_HDR/smith_welding/smith_welding_249519.tif'
     img = iio.v3.imread(image_path)
     img = hdr.normalize_hdr(img, 16)
@@ -97,3 +98,16 @@ if __name__ == '__main__':
     image.save('temp/output_image_sRGB.png')
     print(exposure_time)
     print(img.shape)
+
+
+if __name__ == '__main__':
+    # img_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01'
+    # timestamp_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
+    # generate_timestamps(25, 0, img_dir, timestamp_dir)
+
+    # image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01'
+    # timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
+    # save_dir = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events'
+    # generate_events_loop(image_dir, timestamps_file, save_dir, 0.2, 0.2, 100)
+
+    print_events('/home/s2491540/dataset/HDM_HDR/train/showgirl_01_events.npz')
