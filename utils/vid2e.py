@@ -5,6 +5,7 @@ import glob
 import cv2
 import os
 import gc
+import torch.nn as nn
 
 import esim_torch
 
@@ -32,13 +33,17 @@ def generate_events(esim, images, timestamps):
     # esim = esim_torch.ESIM(contrast_threshold_neg=threshold_n,
     #                        contrast_threshold_pos=threshold_p,
     #                        refractory_period_ns=0)
+    device = "cuda:0"
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        esim = nn.DataParallel(esim)
+    esim.to(device)
     print("Loading images")
     images = np.stack([cv2.imread(f, cv2.IMREAD_GRAYSCALE)[10:-10, 10:-10] for f in images])
 
     log_images = np.log(images.astype("float32") / 255 + 1e-4)
 
     # generate torch tensors
-    device = "cuda:0"
     log_images = torch.from_numpy(log_images).to(device)
     timestamps_ns = torch.from_numpy(timestamps).to(device)
 
@@ -65,8 +70,12 @@ def generate_events_loop(image_dir, timestamps_file, save_dir, threshold_p=0.2, 
     timestamps_s = np.genfromtxt(timestamps_file)
     timestamps_ns = (timestamps_s * 1e9).astype("int64")
     for i in range(0, len(image_files), step):
-        image_temp = image_files[i:i + step]
-        timestamp_temp = timestamps_ns[i:i + step]
+        if i > 0:
+            image_temp = image_files[i-1:i + step]
+            timestamp_temp = timestamps_ns[i-1:i + step]
+        else:
+            image_temp = image_files[i:i + step]
+            timestamp_temp = timestamps_ns[i:i + step]
         events_dict = generate_events(esim, image_temp, timestamp_temp)
         dicts.append(events_dict)
 
@@ -80,8 +89,15 @@ def generate_events_loop(image_dir, timestamps_file, save_dir, threshold_p=0.2, 
             else:
                 merged_dict[key] = np.concatenate((merged_dict[key], value))
 
+    # sort as t
+    t_indices = np.argsort(merged_dict['t'])  # 获取排序后的索引数组
+    x_sorted = merged_dict['x'][t_indices]  # 根据索引排序 x
+    y_sorted = merged_dict['y'][t_indices]  # 根据索引排序 y
+    p_sorted = merged_dict['p'][t_indices]  # 根据索引排序 p
+    t_sorted = merged_dict['t'][t_indices]  # t 本身也需要排序
     save_file = os.path.join(save_dir, 'events_data_all.npz')
-    np.savez_compressed(save_file, x=merged_dict['x'], y=merged_dict['y'], p=merged_dict['p'], t=merged_dict['t'])
+
+    np.savez_compressed(save_file, x=x_sorted, y=y_sorted, p=p_sorted, t=t_sorted)
 
 
 def print_events(events_file):
@@ -100,4 +116,4 @@ if __name__ == "__main__":
     image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01'
     timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
     save_dir = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events'
-    generate_events(image_dir, timestamps_file, save_dir, 0.2, 0.2)
+    generate_events_loop(image_dir, timestamps_file, save_dir, 0.2, 0.2)

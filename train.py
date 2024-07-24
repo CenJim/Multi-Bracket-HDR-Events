@@ -19,7 +19,7 @@ from model.network import EHDR_network
 
 
 class SequenceDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir, transform=None, hdr: bool = False):
         """
         root_dir: 包含所有sequence文件夹的根目录
         transform: torchvision.transforms 对象，用于对输出图像进行处理
@@ -27,6 +27,7 @@ class SequenceDataset(Dataset):
         self.root_dir = root_dir
         self.transform = transform
         self.groups = []
+        self.hdr = hdr
 
         # search for all sequence dirs
         sequences = [os.path.join(root_dir, d) for d in sorted(os.listdir(root_dir)) if
@@ -38,12 +39,20 @@ class SequenceDataset(Dataset):
             hdr_image_folder = os.path.join(seq, 'hdr_images')
             print('ldr image folder: ' + ldr_image_folder)
             # 获取所有输入文件和输出文件
-            ldr_image_files_1 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[1] == '1.npy']
-            ldr_image_files_2 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[1] == '2.npy']
-            ldr_image_files_3 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[1] == '3.npy']
-            events_files_1 = [f for f in sorted(os.listdir(events_folder)) if f.split('_')[1] == '1.npz']
-            events_files_2 = [f for f in sorted(os.listdir(events_folder)) if f.split('_')[1] == '2.npz']
-            hdr_image_files = [f for f in sorted(os.listdir(hdr_image_folder)) if os.path.splitext(f)[1] == '.npy']
+            if hdr:
+                ldr_image_files_1 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[-1] == '1.npz']
+                ldr_image_files_2 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[-1] == '4.npz']
+                ldr_image_files_3 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[-1] == '7.npz']
+                events_files_1 = [f for f in sorted(os.listdir(events_folder)) if f.split('_')[1] == '1.npz']
+                events_files_2 = [f for f in sorted(os.listdir(events_folder)) if f.split('_')[1] == '4.npz']
+                hdr_image_files = [f for f in sorted(os.listdir(hdr_image_folder)) if os.path.splitext(f)[1] == '.npz']
+            else:
+                ldr_image_files_1 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[1] == '1.npy']
+                ldr_image_files_2 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[1] == '2.npy']
+                ldr_image_files_3 = [f for f in sorted(os.listdir(ldr_image_folder)) if f.split('_')[1] == '3.npy']
+                events_files_1 = [f for f in sorted(os.listdir(events_folder)) if f.split('_')[1] == '1.npz']
+                events_files_2 = [f for f in sorted(os.listdir(events_folder)) if f.split('_')[1] == '2.npz']
+                hdr_image_files = [f for f in sorted(os.listdir(hdr_image_folder)) if os.path.splitext(f)[1] == '.npy']
 
             # 确保输入和输出数量相同
             pop_num = len(ldr_image_files_3) - len(hdr_image_files)
@@ -70,12 +79,18 @@ class SequenceDataset(Dataset):
         group = self.groups[idx]
 
         # 读取数据
-        ldr_image_1 = np.load(group[0])
-        ldr_image_2 = np.load(group[1])
-        ldr_image_3 = np.load(group[2])
+        if self.hdr:
+            ldr_image_1 = np.load(group[0])['data']
+            ldr_image_2 = np.load(group[1])['data']
+            ldr_image_3 = np.load(group[2])['data']
+            hdr_image = np.load(group[5])['data']
+        else:
+            ldr_image_1 = np.load(group[0])
+            ldr_image_2 = np.load(group[1])
+            ldr_image_3 = np.load(group[2])
+            hdr_image = np.load(group[5])
         events_1 = []
         events_2 = []
-        hdr_image = np.load(group[5])
         with np.load(group[3]) as data:
             for key in data:
                 events_1.append(data[key])
@@ -153,7 +168,7 @@ class RandomTransform:
 
 
 def main(model_name: str, pretrain_models: str, root_files: str, save_path: str, height: int, width: int,
-         num_events_per_pixel: float):
+         num_events_per_pixel: float, hdr_flag: bool):
     # Parameters
     epochs = 60
     batch_size = 2
@@ -166,6 +181,8 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     # Network
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = EHDR_network(event_shape=(crop_size, crop_size), num_feat=64, num_frame=3).to(device)
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
     optimizer = Adam(model.parameters(), lr=learning_rate)
     scheduler = StepLR(optimizer, step_size=15, gamma=0.5)
     loss_fun = CombinedLoss()
@@ -174,7 +191,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     # Data loading and transformations
 
     transform = RandomTransform()
-    dataset = SequenceDataset(root_files, transform=transform)  # Placeholder for your dataset class
+    dataset = SequenceDataset(root_files, transform=transform, hdr=hdr_flag)  # Placeholder for your dataset class
     print(f'length of dataset: {len(dataset)}')
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -213,7 +230,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     minutes, seconds = divmod(rem, 60)
     print(f"Training complete! Total time: {int(hours):04}:{int(minutes):02}:{int(seconds):02}")
     # 保存训练好的模型
-    model_path = 'pretrained_models/EHDR.pth'
+    model_path = 'pretrained_models/EHDR_HDR.pth'
     torch.save(model.state_dict(), model_path)
     print("Training complete!")
 
@@ -227,6 +244,7 @@ if __name__ == '__main__':
     parser.add_argument('-height', type=int, default=180)
     parser.add_argument('-width', type=int, default=240)
     parser.add_argument('-num_events_per_pixel', type=float, default=0.5)
+    parser.add_argument('-hdr_flag', type=bool, default=False)
     args = parser.parse_args()
     model_name = args.network
     pretrain_models = args.path_to_pretrain_models
@@ -235,4 +253,5 @@ if __name__ == '__main__':
     height = args.height
     width = args.width
     num_events_per_pixel = args.num_events_per_pixel
-    main(model_name, pretrain_models, root_files, save_path, height, width, num_events_per_pixel)
+    hdr_flag = args.hdr_flag
+    main(model_name, pretrain_models, root_files, save_path, height, width, num_events_per_pixel, hdr_flag)

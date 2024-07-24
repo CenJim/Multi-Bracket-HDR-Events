@@ -297,7 +297,7 @@ def get_voxel_grid(events, height, width, number_chunk, num_bins, device):
     for chunked_event in chunked_events:
         event_tensor = events_to_voxel_grid(chunked_event[:, 1], chunked_event[:, 2], chunked_event[:, 3],
                                             chunked_event[:, 0], voxel_grid, device)
-        event_tensor = event_tensor[:, :469, :].cpu()
+        event_tensor = event_tensor[:, :, :].cpu()
         event_tensors.append(event_tensor)
     return event_tensors
 
@@ -320,6 +320,8 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
             j = 1
         else:
             j += 1
+        if j == 3:
+            continue
         events_chunk = []
         while i < events_length:
             if exposure_timestamp <= events_dataset[i][0] + events_offset <= exposure_timestamps[index + 1]:
@@ -329,8 +331,7 @@ def process_events(source_folder, target_folder, image_timestamps, width, height
                 break
             else:
                 i += 1
-        if j == 3:
-            continue
+
         with torch.no_grad():
             voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_chunks, num_bins, device)
         events_chunks.append(voxel_grid_tensors)
@@ -390,14 +391,17 @@ def process_events_hdr(events_file, target_folder, image_timestamps, width, heig
     events_length = len(events_dataset)
     events_chunks = []
     j = 0
-    for it, exposure_timestamp in tqdm(enumerate(exposure_timestamps[:-3:3]),
-                                          total=len(exposure_timestamps[:-3:3]),
+    for index, exposure_timestamp in tqdm(enumerate(exposure_timestamps[:-3:1]),
+                                          total=len(exposure_timestamps[:-3:1]),
                                           desc='Events processing'):
-        index = it * 3
-        if j >= 3:
+        if j >= 7:
             j = 1
         else:
             j += 1
+
+        if 2 <= j <= 3 or 5 <= j <= 7:
+            continue
+
         events_chunk = []
         while i < events_length:
             if exposure_timestamp <= events_dataset[i][0] <= exposure_timestamps[index + 3]:
@@ -407,9 +411,10 @@ def process_events_hdr(events_file, target_folder, image_timestamps, width, heig
                 break
             else:
                 i += 1
-        if j == 3:
+        if j == 7:
             continue
         print(index)
+        print(f'events chunk: {len(events_chunk)}')
         with torch.no_grad():
             voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_chunks, num_bins, device)
         events_chunks.append(voxel_grid_tensors)
@@ -489,8 +494,8 @@ if __name__ == '__main__':
     # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
 
     # process hdr events and save to a path
-    event_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_events.npz'
+    event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz'
     output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events'
     image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 8, 5, device, True, 'npz')
+    process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')

@@ -107,7 +107,11 @@ if __name__ == '__main__':
 
     # image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01'
     # timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
-    # save_dir = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events'
-    # generate_events_loop(image_dir, timestamps_file, save_dir, 0.2, 0.2, 100)
+    # save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
+    # generate_events_loop(image_dir, timestamps_file, save_dir, 0.1, 0.1, 20)
 
-    print_events('/home/s2491540/dataset/HDM_HDR/train/showgirl_01_events.npz')
+    print_events('/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz')
+    # events = np.load('/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events/000000_1.npz')
+    # for key in events:
+    #     event = events[key]
+    # print(0)
