@@ -84,6 +84,8 @@ class SequenceDataset(Dataset):
             ldr_image_2 = np.load(group[1])['data']
             ldr_image_3 = np.load(group[2])['data']
             hdr_image = np.load(group[5])['data']
+            u = 5000
+            hdr_image = np.log1p(u * hdr_image) / np.log1p(u)
         else:
             ldr_image_1 = np.load(group[0])
             ldr_image_2 = np.load(group[1])
@@ -195,7 +197,15 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     print(f'length of dataset: {len(dataset)}')
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
+    model_path = '../pretrained_models/EHDR_HDR'
+    if not os.path.exists(model_path):
+        # 如果目录不存在，则创建它
+        os.makedirs(model_path)
+        print(f"{model_path} created")
+    else:
+        print(f"{model_path} exists")
     # Training loop
+    save_interval = 10
     start_time = time.time()
     model.train()
     for epoch in range(epochs):
@@ -223,6 +233,8 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
         scheduler.step()
         current_lr = scheduler.get_last_lr()[0]
         print(f'Epoch {epoch + 1}, Current learning rate: {current_lr}')
+        if epoch % save_interval == 0:
+            torch.save(model.state_dict(), os.path.join(model_path, f'model_epoch_{epoch}.pth'))
 
     end_time = time.time()
     total_time = end_time - start_time
@@ -230,8 +242,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     minutes, seconds = divmod(rem, 60)
     print(f"Training complete! Total time: {int(hours):04}:{int(minutes):02}:{int(seconds):02}")
     # 保存训练好的模型
-    model_path = 'pretrained_models/EHDR_HDR.pth'
-    torch.save(model.state_dict(), model_path)
+    torch.save(model.state_dict(), os.path.join(model_path, 'model_epoch_final.pth'))
     print("Training complete!")
 
 

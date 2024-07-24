@@ -101,16 +101,16 @@ def test_hdr():
 
 
 if __name__ == '__main__':
-    # img_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01'
-    # timestamp_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
+    # img_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02'
+    # timestamp_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_timestamps.txt'
     # generate_timestamps(25, 0, img_dir, timestamp_dir)
 
-    # image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01'
-    # timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
-    # save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
-    # generate_events_loop(image_dir, timestamps_file, save_dir, 0.1, 0.1, 20)
+    image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02'
+    timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_timestamps.txt'
+    save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
+    generate_events_loop(image_dir, timestamps_file, save_dir, 0.15, 0.15, 6)
 
-    print_events('/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz')
+    # print_events('/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz')
     # events = np.load('/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events/000000_1.npz')
     # for key in events:
     #     event = events[key]

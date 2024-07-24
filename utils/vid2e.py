@@ -1,3 +1,5 @@
+import sys
+
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,7 +8,7 @@ import cv2
 import os
 import gc
 import torch.nn as nn
-
+from tqdm import tqdm
 import esim_torch
 
 
@@ -34,10 +36,10 @@ def generate_events(esim, images, timestamps):
     #                        contrast_threshold_pos=threshold_p,
     #                        refractory_period_ns=0)
     device = "cuda:0"
+    esim.to(device)
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         esim = nn.DataParallel(esim)
-    esim.to(device)
     print("Loading images")
     images = np.stack([cv2.imread(f, cv2.IMREAD_GRAYSCALE)[10:-10, 10:-10] for f in images])
 
@@ -65,20 +67,25 @@ def generate_events_loop(image_dir, timestamps_file, save_dir, threshold_p=0.2, 
     merged_dict = {}
     dicts = []
     print("Loading images")
+    sys.stdout.flush()
     image_pattern = os.path.join(image_dir, '*.tif')
     image_files = sorted(glob.glob(image_pattern))
     timestamps_s = np.genfromtxt(timestamps_file)
     timestamps_ns = (timestamps_s * 1e9).astype("int64")
-    for i in range(0, len(image_files), step):
+    for i in tqdm(range(0, len(image_files), step), total=len(range(0, len(image_files), step)),
+                  desc='events generation'):
         if i > 0:
-            image_temp = image_files[i-1:i + step]
-            timestamp_temp = timestamps_ns[i-1:i + step]
+            image_temp = image_files[i - 1:i + step]
+            timestamp_temp = timestamps_ns[i - 1:i + step]
         else:
             image_temp = image_files[i:i + step]
             timestamp_temp = timestamps_ns[i:i + step]
         events_dict = generate_events(esim, image_temp, timestamp_temp)
         dicts.append(events_dict)
+        sys.stdout.flush()
 
+    print('saving the events')
+    sys.stdout.flush()
     for key in dicts[0]:
         merged_dict[key] = []
     for d in dicts:
@@ -98,6 +105,8 @@ def generate_events_loop(image_dir, timestamps_file, save_dir, threshold_p=0.2, 
     save_file = os.path.join(save_dir, 'events_data_all.npz')
 
     np.savez_compressed(save_file, x=x_sorted, y=y_sorted, p=p_sorted, t=t_sorted)
+    print('events saved')
+    sys.stdout.flush()
 
 
 def print_events(events_file):

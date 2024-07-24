@@ -1,3 +1,5 @@
+import sys
+
 import cv2
 import numpy as np
 import os
@@ -304,6 +306,8 @@ def get_voxel_grid(events, height, width, number_chunk, num_bins, device):
 
 def process_events(source_folder, target_folder, image_timestamps, width, height, num_chunks, num_bins,
                    device, save_flag: bool = False, save_format: str = 'npy'):
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
     print('Loading the dataset...')
     events_dataset = get_dataset(source_folder)
     print('Dataset Loaded!')
@@ -381,6 +385,8 @@ def get_dataset_npz(source_folder):
 
 def process_events_hdr(events_file, target_folder, image_timestamps, width, height, num_chunks, num_bins,
                        device, save_flag: bool = False, save_format: str = 'npy'):
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
     print('Loading the dataset...')
     events_dataset = get_dataset_npz(events_file)
     print('Dataset Loaded!')
@@ -442,6 +448,7 @@ def process_events_hdr(events_file, target_folder, image_timestamps, width, heig
                     save_path = os.path.join(target_folder, f'{index:06}_{vg_index:06}.pt')
                     torch.save(voxel_grid_tensor, save_path)
                     # print(f'save {index:06}_{vg_index:06}.pt to target_folder')
+        sys.stdout.flush()
 
     # if save_flag and save_format == 'npz':
     #     target_file = os.path.join(target_folder, 'all_processed_events.npz')
@@ -478,9 +485,9 @@ if __name__ == '__main__':
     # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process HDR image and save to a path
-    # image_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/showgirl_01'
-    # output_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/sequences/showgirl_01/ldr_images'
-    # supervised_folder = '/Volumes/CenJim/train data/dataset/HDM_HDR/sequences/showgirl_01/hdr_images'
+    # image_folder = '/home/s2491540/dataset/HDM_HDR/train/smith_welding'
+    # output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/smith_welding/ldr_images'
+    # supervised_folder = '/home/s2491540/dataset/HDM_HDR/sequences/smith_welding/hdr_images'
     # process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
 
     # process events and save to a path
@@ -495,7 +502,7 @@ if __name__ == '__main__':
 
     # process hdr events and save to a path
     event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz'
-    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events'
-    image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
+    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/smith_welding/events'
+    image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/smith_welding_timestamps.txt'
     device = "cuda" if torch.cuda.is_available() else "cpu"
     process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')
