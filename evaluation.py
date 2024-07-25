@@ -88,13 +88,13 @@ def main(model_name: str, pretrain_models: str, input_path: str, save_path: str,
     if hdr:
         u = 5000
         output = ((1 + u) ** output) / u
-        output = hd.pq_2_linear(output)
-        output = hd.rec2020_2_sRGB(output)
-        exposure_time = hd.histogram_based_exposure(output, target_percentile=99, target_value=0.9, gamma=2.2, tol=0.01,
-                                                     max_iter=100)
-        output = hd.change_exposure(output, 1)
-        output = hd.apply_gamma(output, exposure_time, 2.2)
-        cv2.imwrite(os.path.join(save_path, 'test_HDR.tif'),
+        # output = hd.pq_2_linear(output)
+        # output = hd.rec2020_2_sRGB(output)
+        # exposure_time = hd.histogram_based_exposure(output, target_percentile=99, target_value=0.9, gamma=2.2, tol=0.01,
+        #                                              max_iter=100)
+        # output = hd.change_exposure(output, 1)
+        # output = hd.apply_gamma(output, exposure_time, 2.2)
+        cv2.imwrite(os.path.join(save_path, 'test_HDR_rec2020.tif'),
                                  cv2.cvtColor((output * 65535).astype(np.uint16), cv2.COLOR_RGB2BGR))
     else:
         output = (output * 255).astype(np.uint8)
