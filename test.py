@@ -7,7 +7,7 @@ from PIL import Image
 import os
 import torch
 import torchvision.models as models
-# from model.network import EHDR_network
+from model.network import EHDR_network
 from PIL import Image
 import imageio as iio
 import utils.HDR as hdr
@@ -83,6 +83,10 @@ def normalize_to_8_bit(img):
     return (img * 255).astype('uint8')
 
 
+def normalize_to_16_bit(img):
+    return (img * 65535).astype('uint8')
+
+
 def test_hdr():
     image_path = '/Volumes/CenJim/train data/dataset/HDM_HDR/smith_welding/smith_welding_249519.tif'
     img = iio.v3.imread(image_path)
@@ -105,13 +109,16 @@ if __name__ == '__main__':
     # timestamp_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_timestamps.txt'
     # generate_timestamps(25, 0, img_dir, timestamp_dir)
 
-    image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02'
-    timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_timestamps.txt'
-    save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
-    generate_events_loop(image_dir, timestamps_file, save_dir, 0.15, 0.15, 6)
+    # image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02'
+    # timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_timestamps.txt'
+    # save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
+    # generate_events_loop(image_dir, timestamps_file, save_dir, 0.15, 0.15, 6)
 
     # print_events('/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz')
     # events = np.load('/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events/000000_1.npz')
     # for key in events:
     #     event = events[key]
     # print(0)
+
+    model = EHDR_network((1060, 1900))
+    get_model_param_num(model)

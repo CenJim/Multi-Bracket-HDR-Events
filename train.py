@@ -185,6 +185,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     model = EHDR_network(event_shape=(crop_size, crop_size), num_feat=64, num_frame=3).to(device)
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
+    model.load_state_dict(torch.load(pretrain_models))
     optimizer = Adam(model.parameters(), lr=learning_rate)
     scheduler = StepLR(optimizer, step_size=15, gamma=0.5)
     loss_fun = CombinedLoss()
@@ -234,7 +235,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
         current_lr = scheduler.get_last_lr()[0]
         print(f'Epoch {epoch + 1}, Current learning rate: {current_lr}')
         if epoch % save_interval == 0:
-            torch.save(model.state_dict(), os.path.join(model_path, f'model_epoch_{epoch}.pth'))
+            torch.save(model.state_dict(), os.path.join(model_path, f'EHDR_model_epoch_{epoch}.pth'))
 
     end_time = time.time()
     total_time = end_time - start_time
@@ -242,7 +243,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     minutes, seconds = divmod(rem, 60)
     print(f"Training complete! Total time: {int(hours):04}:{int(minutes):02}:{int(seconds):02}")
     # 保存训练好的模型
-    torch.save(model.state_dict(), os.path.join(model_path, 'model_epoch_final.pth'))
+    torch.save(model.state_dict(), os.path.join(model_path, 'EHDR_model_epoch_final.pth'))
     print("Training complete!")
 
 

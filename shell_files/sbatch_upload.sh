@@ -1,1 +1,1 @@
-sbatch --gres=gpu:2 test.sh
+sbatch --gres=gpu:4 train.sh

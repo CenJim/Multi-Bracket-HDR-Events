@@ -1,17 +1,27 @@
 import argparse
+from tracemalloc import Traceback
+
+import cv2
+
 from model.network import EHDR_network
 from PIL import Image
 import numpy as np
 import torch
 import os
 import torch.nn as nn
+import utils.HDR as hd
 
 
-def data_load(group, device):
+def data_load(group, device, hdr: bool):
     # 读取数据
-    ldr_image_1 = np.load(group[0])
-    ldr_image_2 = np.load(group[1])
-    ldr_image_3 = np.load(group[2])
+    if hdr:
+        ldr_image_1 = np.load(group[0])['data']
+        ldr_image_2 = np.load(group[1])['data']
+        ldr_image_3 = np.load(group[2])['data']
+    else:
+        ldr_image_1 = np.load(group[0])
+        ldr_image_2 = np.load(group[1])
+        ldr_image_3 = np.load(group[2])
     events_1 = []
     events_2 = []
     with np.load(group[3]) as data:
@@ -22,39 +32,74 @@ def data_load(group, device):
             events_2.append(data[key])
 
     # 转换输入数据为torch.Tensor
-    ldr_image_1_tensor = torch.from_numpy(ldr_image_1[:, :468, :]).float().unsqueeze(0).to(device)
-    ldr_image_2_tensor = torch.from_numpy(ldr_image_2[:, :468, :]).float().unsqueeze(0).to(device)
-    ldr_image_3_tensor = torch.from_numpy(ldr_image_3[:, :468, :]).float().unsqueeze(0).to(device)
-    events_1_tensor = torch.from_numpy(np.array(events_1)[:, :, :468, :]).float().unsqueeze(0).to(device)
-    events_2_tensor = torch.from_numpy(np.array(events_2)[:, :, :468, :]).float().unsqueeze(0).to(device)
+    if hdr:
+        top = 330
+        bottom = 730
+        left = 750
+        right = 1150
+        ldr_image_1_tensor = torch.from_numpy(ldr_image_1[:, top:bottom, left:right]).float().unsqueeze(0).to(device)
+        ldr_image_2_tensor = torch.from_numpy(ldr_image_2[:, top:bottom, left:right]).float().unsqueeze(0).to(device)
+        ldr_image_3_tensor = torch.from_numpy(ldr_image_3[:, top:bottom, left:right]).float().unsqueeze(0).to(device)
+        events_1_tensor = torch.from_numpy(np.array(events_1)[:, :, top:bottom, left:right]).float().unsqueeze(0).to(device)
+        events_2_tensor = torch.from_numpy(np.array(events_2)[:, :, top:bottom, left:right]).float().unsqueeze(0).to(device)
+    else:
+        ldr_image_1_tensor = torch.from_numpy(ldr_image_1[:, :468, :]).float().unsqueeze(0).to(device)
+        ldr_image_2_tensor = torch.from_numpy(ldr_image_2[:, :468, :]).float().unsqueeze(0).to(device)
+        ldr_image_3_tensor = torch.from_numpy(ldr_image_3[:, :468, :]).float().unsqueeze(0).to(device)
+        events_1_tensor = torch.from_numpy(np.array(events_1)[:, :, :468, :]).float().unsqueeze(0).to(device)
+        events_2_tensor = torch.from_numpy(np.array(events_2)[:, :, :468, :]).float().unsqueeze(0).to(device)
 
     return ldr_image_1_tensor, ldr_image_2_tensor, ldr_image_3_tensor, events_1_tensor, events_2_tensor
 
 
-def main(model_name: str, pretrain_models: str, input_path: str, save_path: str):
+def main(model_name: str, pretrain_models: str, input_path: str, save_path: str, hdr: bool):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("cpu")
-    net = eval(model_name)(event_shape=(468, 640), num_feat=64, num_frame=3)
+    if hdr:
+        net = eval(model_name)(event_shape=(400, 400), num_feat=64, num_frame=3)
+    else:
+        net = eval(model_name)(event_shape=(468, 640), num_feat=64, num_frame=3)
     net.eval()
-    net = nn.DataParallel(net).to(device)
-    state_dict = torch.load(pretrain_models, device)
-    new_state_dict = {'module.' + k: v for k, v in state_dict.items()}
-    net.load_state_dict(new_state_dict)
+    state_dict = torch.load(pretrain_models)
+    # new_state_dict = {'module.' + k: v for k, v in state_dict.items()}
+    net = nn.DataParallel(net)
+    net.load_state_dict(state_dict)
+    net = net.to(device)
+
     os.path.join(input_path, 'ldr_images/000001_2.npy')
-    reference_image = os.path.join(input_path, 'ldr_images/000001_2.npy')
-    under_exposure = os.path.join(input_path, 'ldr_images/000000_1.npy')
-    over_exposure = os.path.join(input_path, 'ldr_images/000002_3.npy')
-    events_under = os.path.join(input_path, 'events/000000_1.npz')
-    events_upper = os.path.join(input_path, 'events/000001_2.npz')
+    if hdr:
+        reference_image = os.path.join(input_path, 'ldr_images/showgirl_02_301963_1.npz')
+        under_exposure = os.path.join(input_path, 'ldr_images/showgirl_02_301966_4.npz')
+        over_exposure = os.path.join(input_path, 'ldr_images/showgirl_02_301969_7.npz')
+        events_under = os.path.join(input_path, 'events/000000_1.npz')
+        events_upper = os.path.join(input_path, 'events/000003_4.npz')
+    else:
+        reference_image = os.path.join(input_path, 'ldr_images/000001_2.npy')
+        under_exposure = os.path.join(input_path, 'ldr_images/000000_1.npy')
+        over_exposure = os.path.join(input_path, 'ldr_images/000002_3.npy')
+        events_under = os.path.join(input_path, 'events/000000_1.npz')
+        events_upper = os.path.join(input_path, 'events/000001_2.npz')
     group = (under_exposure, reference_image, over_exposure, events_under, events_upper)
-    input_data = data_load(group, device)
+    input_data = data_load(group, device, hdr)
     with torch.no_grad():
         output = net(input_data[1], input_data[0], input_data[2], input_data[3],
-                     input_data[4]).cpu().detach().numpy()
-    output = np.transpose(output[0], (1, 2, 0))
-    output = (output * 255).astype(np.uint8)
-    img = Image.fromarray(output, 'RGB')
-    img.save(os.path.join(save_path, 'test.bmp'))
+                     input_data[4]).cpu().detach().numpy().astype(np.float64)
+        output = np.transpose(output[0], (1, 2, 0))
+    if hdr:
+        u = 5000
+        output = ((1 + u) ** output) / u
+        output = hd.pq_2_linear(output)
+        output = hd.rec2020_2_sRGB(output)
+        exposure_time = hd.histogram_based_exposure(output, target_percentile=99, target_value=0.9, gamma=2.2, tol=0.01,
+                                                     max_iter=100)
+        output = hd.change_exposure(output, 1)
+        output = hd.apply_gamma(output, exposure_time, 2.2)
+        cv2.imwrite(os.path.join(save_path, 'test_HDR.tif'),
+                                 cv2.cvtColor((output * 65535).astype(np.uint16), cv2.COLOR_RGB2BGR))
+    else:
+        output = (output * 255).astype(np.uint8)
+        img = Image.fromarray(output, 'RGB')
+        img.save(os.path.join(save_path, 'test.bmp'))
 
 
 if __name__ == '__main__':
@@ -75,7 +120,7 @@ if __name__ == '__main__':
     # width = args.width
     # num_events_per_pixel = args.num_events_per_pixel
     model_name = 'EHDR_network'
-    pretrain_models = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/EHDR.pth'
-    save_path = './result'
-    input_path = '/home/s2491540/dataset/DSEC/train_sequences/sequence_0000001'
-    main(model_name, pretrain_models, input_path, save_path)
+    pretrain_models = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/EHDR_HDR/model_epoch_50.pth'
+    save_path = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/result'
+    input_path = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_02'
+    main(model_name, pretrain_models, input_path, save_path, hdr=True)

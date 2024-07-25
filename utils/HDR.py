@@ -110,3 +110,11 @@ def histogram_based_exposure(hdr_img, target_percentile=90, target_value=0.9, ga
             high = mid
     print(f'iter:{_}')
     return mid
+
+
+def normalize_to_8_bit(img):
+    return (img * 255).astype('uint8')
+
+
+def normalize_to_16_bit(img):
+    return (img * 65535).astype('uint8')
