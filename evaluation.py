@@ -120,7 +120,7 @@ if __name__ == '__main__':
     # width = args.width
     # num_events_per_pixel = args.num_events_per_pixel
     model_name = 'EHDR_network'
-    pretrain_models = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/EHDR_HDR/model_epoch_50.pth'
+    pretrain_models = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/pretrained/EHDR_HDR/model_epoch_50.pth'
     save_path = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/result'
     input_path = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_02'
     main(model_name, pretrain_models, input_path, save_path, hdr=True)
