@@ -421,9 +421,14 @@ def process_events_hdr(events_file, target_folder, image_timestamps, width, heig
             continue
         print(index)
         print(f'events chunk: {len(events_chunk)}')
+        sys.stdout.flush()
         with torch.no_grad():
+            print('calculating the voxel grid')
+            sys.stdout.flush()
             voxel_grid_tensors = get_voxel_grid(np.array(events_chunk), height, width, num_chunks, num_bins, device)
-        events_chunks.append(voxel_grid_tensors)
+            print('voxel grid calculated')
+            sys.stdout.flush()
+        # events_chunks.append(voxel_grid_tensors)
         if save_flag:
             if save_format == 'npy':
                 for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
@@ -433,15 +438,19 @@ def process_events_hdr(events_file, target_folder, image_timestamps, width, heig
                     np.save(save_path, voxel_grid_tensor.cpu().numpy())
                     # print(f'save {index:06}_{vg_index:06}.pt to target_folder')
             elif save_format == 'npz':
-
                 voxel_grid_tensors_between = {}
+                print('voxel grid to cpu and numpy')
+                sys.stdout.flush()
                 for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
                     if voxel_grid_tensor.is_cuda:
                         voxel_grid_tensor.cpu()
-                    voxel_grid_tensors_between[f'{vg_index:06}'] = (voxel_grid_tensor.cpu().numpy())
+                    voxel_grid_tensors_between[f'{vg_index:06}'] = (voxel_grid_tensor.numpy())
                     # print(f'Precessed events: {index:06}_{vg_index:06}')
                 save_path = os.path.join(target_folder, f'{index:06}_{j}.npz')
+                print('voxel grid save npz')
+                sys.stdout.flush()
                 np.savez_compressed(save_path, **voxel_grid_tensors_between)
+                print('npz saved')
                 # processed_events[key] = np.array(voxel_grid_tensors_between)
             else:
                 for vg_index, voxel_grid_tensor in enumerate(voxel_grid_tensors):
@@ -449,14 +458,13 @@ def process_events_hdr(events_file, target_folder, image_timestamps, width, heig
                     torch.save(voxel_grid_tensor, save_path)
                     # print(f'save {index:06}_{vg_index:06}.pt to target_folder')
         sys.stdout.flush()
-
+    # return events_chunks
     # if save_flag and save_format == 'npz':
     #     target_file = os.path.join(target_folder, 'all_processed_events.npz')
     #     print('Saving the npz file...')
     #     np.savez_compressed(target_file, **processed_events)
     #     print(f"All processed events saved to {target_file}")
 
-    return events_chunks
 
 
 if __name__ == '__main__':
@@ -485,10 +493,10 @@ if __name__ == '__main__':
     # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process HDR image and save to a path
-    image_folder = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02'
-    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_02/ldr_images'
-    supervised_folder = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_02/hdr_images'
-    process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
+    # image_folder = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01'
+    # output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/Carousel_Fireworks_01/ldr_images'
+    # supervised_folder = '/home/s2491540/dataset/HDM_HDR/sequences/Carousel_Fireworks_01/hdr_images'
+    # process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
 
     # process events and save to a path
     # event_folder = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_events_left'
@@ -501,8 +509,8 @@ if __name__ == '__main__':
     # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
 
     # process hdr events and save to a path
-    # event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz'
-    # output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_02/events'
-    # image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_timestamps.txt'
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-    # process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')
+    event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz'
+    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/Carousel_Fireworks_01/events'
+    image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01_timestamps.txt'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')

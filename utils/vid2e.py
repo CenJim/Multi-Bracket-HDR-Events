@@ -35,11 +35,11 @@ def generate_events(esim, images, timestamps):
     # esim = esim_torch.ESIM(contrast_threshold_neg=threshold_n,
     #                        contrast_threshold_pos=threshold_p,
     #                        refractory_period_ns=0)
-    device = "cuda:0"
+    device = "cuda"
+    # if torch.cuda.device_count() > 1:
+    #     print("Let's use", torch.cuda.device_count(), "GPUs!")
+    #     esim = nn.DataParallel(esim)
     esim.to(device)
-    if torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
-        esim = nn.DataParallel(esim)
     print("Loading images")
     images = np.stack([cv2.imread(f, cv2.IMREAD_GRAYSCALE)[10:-10, 10:-10] for f in images])
 
@@ -84,28 +84,52 @@ def generate_events_loop(image_dir, timestamps_file, save_dir, threshold_p=0.2, 
         dicts.append(events_dict)
         sys.stdout.flush()
 
-    print('saving the events')
+    print('saving the events process')
     sys.stdout.flush()
-    for key in dicts[0]:
-        merged_dict[key] = []
-    for d in dicts:
-        for key, value in d.items():
-            # 如果merged_dict[key]为空，则直接赋值，否则在现有数组后追加
-            if len(merged_dict[key]) == 0:
-                merged_dict[key] = value
-            else:
-                merged_dict[key] = np.concatenate((merged_dict[key], value))
+    # for key in dicts[0].keys():
+    #     merged_dict[key] = []
+    # for d in dicts:
+    #     for key, value in d.items():
+    #         # 如果merged_dict[key]为空，则直接赋值，否则在现有数组后追加
+    #         if len(merged_dict[key]) == 0:
+    #             merged_dict[key] = value
+    #         else:
+    #             merged_dict[key] = np.concatenate((merged_dict[key], value))
+    final_size = sum(len(d['p']) for d in dicts)
+    # 预先分配内存
+    for key in dicts[0].keys():
+        if key == 't':
+            merged_dict[key] = np.empty(final_size, dtype=np.int64)  # 或者根据你的数据类型调整
+        else:
+            merged_dict[key] = np.empty(final_size, dtype=np.int16)  # 或者根据你的数据类型调整
+
+    # 使用索引填充数据
+    for key in merged_dict.keys():
+        start = 0
+        for d in dicts:
+            size = len(d[key])
+            merged_dict[key][start:start + size] = d[key]
+            start += size
 
     # sort as t
+    print('sorting events indices')
+    sys.stdout.flush()
     t_indices = np.argsort(merged_dict['t'])  # 获取排序后的索引数组
-    x_sorted = merged_dict['x'][t_indices]  # 根据索引排序 x
-    y_sorted = merged_dict['y'][t_indices]  # 根据索引排序 y
-    p_sorted = merged_dict['p'][t_indices]  # 根据索引排序 p
-    t_sorted = merged_dict['t'][t_indices]  # t 本身也需要排序
+    print('events sorted')
+    print('get the sorted output')
+    sys.stdout.flush()
+    merged_dict['x'] = merged_dict['x'][t_indices]  # 根据索引排序 x
+    merged_dict['y'] = merged_dict['y'][t_indices]  # 根据索引排序 y
+    merged_dict['p'] = merged_dict['p'][t_indices]  # 根据索引排序 p
+    merged_dict['t'] = merged_dict['t'][t_indices]  # t 本身也需要排序
+    print('sorted output got')
+    print('savez')
+    sys.stdout.flush()
     save_file = os.path.join(save_dir, 'events_data_all.npz')
 
-    np.savez_compressed(save_file, x=x_sorted, y=y_sorted, p=p_sorted, t=t_sorted)
-    print('events saved')
+    np.savez_compressed(save_file, x=merged_dict['x'], y=merged_dict['y'], p=merged_dict['p'], t=merged_dict['t'])
+    print('compressed saved')
+    print('saving events process done')
     sys.stdout.flush()
 
 
@@ -122,7 +146,7 @@ def print_events(events_file):
 
 
 if __name__ == "__main__":
-    image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01'
-    timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_01_timestamps.txt'
-    save_dir = '/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events'
-    generate_events_loop(image_dir, timestamps_file, save_dir, 0.2, 0.2)
+    image_dir = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01'
+    timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01_timestamps.txt'
+    save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
+    generate_events_loop(image_dir, timestamps_file, save_dir, 0.25, 0.25, 15)

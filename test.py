@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from utils.preprocessing import read_timestamps_from_file
+from utils.preprocessing import read_timestamps_from_file, process_events_hdr
 from utils.vision_quality_compare import calculate_psnr, calculate_mse, calculate_ssim, calculate_lpips
 from utils.load_hdf import get_dataset_shape
 from PIL import Image
@@ -32,13 +32,17 @@ def check_npy(data_path, data_type: str = 'npy'):
     print(f'the average exposure time is: {np.mean([int(pair[1]) - int(pair[0]) for pair in timestamps_pair])}')
 
 
-def npy_to_image(data_path):
-    img = np.load(data_path)
+def npy_to_image(data_path, out_name, top, bottom, left, right, type: str = 'npy'):
+    if type == 'npy':
+        img = np.load(data_path)
+    else:
+        img = np.load(data_path)['data']
     img = np.transpose(img, (1, 2, 0))
     print(img.shape)
     print(img[:, :, 0:3])
     # cv2.imshow('Processed Image', cv2.cvtColor(img[:, :, 0:3], cv2.COLOR_RGB2BGR))
-    cv2.imwrite('temp/hdr.png', cv2.cvtColor((img[:, :, 0:3] * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+    cv2.imwrite(os.path.join('temp', out_name),
+                cv2.cvtColor((img[top:bottom, left:right, 0:3] * 65535).astype(np.uint16), cv2.COLOR_RGB2BGR))
     # print('press \'q\' or \'Esc\' to quit')
     # k = cv2.waitKey(0)
     # if k == 27 or k == ord('q'):  # 按下 ESC(27) 或 'q' 退出
@@ -105,20 +109,28 @@ def test_hdr():
 
 
 if __name__ == '__main__':
-    # img_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02'
-    # timestamp_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_timestamps.txt'
-    # generate_timestamps(25, 0, img_dir, timestamp_dir)
+    img_dir = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01'
+    timestamp_dir = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01_timestamps.txt'
 
-    # image_dir = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02'
-    # timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_timestamps.txt'
-    # save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
-    # generate_events_loop(image_dir, timestamps_file, save_dir, 0.15, 0.15, 6)
+    generate_timestamps(25, 0, img_dir, timestamp_dir)
+
+
 
     # print_events('/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz')
+    # data_path = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/showgirl_02/ldr_images/showgirl_02_301966_4.npz'
+    # out_name = 'ldr.tif'
+    # npy_to_image(data_path, out_name, 230, 830, 650, 1250, 'npz')
     # events = np.load('/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events/000000_1.npz')
     # for key in events:
     #     event = events[key]
     # print(0)
 
-    model = EHDR_network((1060, 1900))
-    get_model_param_num(model)
+    # model = EHDR_network((1060, 1900))
+    # get_model_param_num(model)
+
+    # process hdr events and save to a path
+    # event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all_0.npz'
+    # output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/fishing_longshot/events'
+    # image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/fishing_longshot_timestamps.txt'
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    # process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')
