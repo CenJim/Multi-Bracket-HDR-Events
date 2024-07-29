@@ -1,1 +1,1 @@
-sbatch --gres=gpu:4 preprocess.sh
+sbatch --gres=gpu:4 evaluation.sh

@@ -2,6 +2,7 @@ import argparse
 from tracemalloc import Traceback
 
 import cv2
+from imageio import formats
 
 from model.network import EHDR_network
 from PIL import Image
@@ -10,9 +11,10 @@ import torch
 import os
 import torch.nn as nn
 import utils.HDR as hd
+import imageio as iio
 
 
-def data_load(group, device, top ,bottom, left, right, hdr: bool):
+def data_load(group, device, top, bottom, left, right, hdr: bool):
     # 读取数据
     if hdr:
         ldr_image_1 = np.load(group[0])['data']
@@ -36,8 +38,10 @@ def data_load(group, device, top ,bottom, left, right, hdr: bool):
         ldr_image_1_tensor = torch.from_numpy(ldr_image_1[:, top:bottom, left:right]).float().unsqueeze(0).to(device)
         ldr_image_2_tensor = torch.from_numpy(ldr_image_2[:, top:bottom, left:right]).float().unsqueeze(0).to(device)
         ldr_image_3_tensor = torch.from_numpy(ldr_image_3[:, top:bottom, left:right]).float().unsqueeze(0).to(device)
-        events_1_tensor = torch.from_numpy(np.array(events_1)[:, :, top:bottom, left:right]).float().unsqueeze(0).to(device)
-        events_2_tensor = torch.from_numpy(np.array(events_2)[:, :, top:bottom, left:right]).float().unsqueeze(0).to(device)
+        events_1_tensor = torch.from_numpy(np.array(events_1)[:, :, top:bottom, left:right]).float().unsqueeze(0).to(
+            device)
+        events_2_tensor = torch.from_numpy(np.array(events_2)[:, :, top:bottom, left:right]).float().unsqueeze(0).to(
+            device)
     else:
         ldr_image_1_tensor = torch.from_numpy(ldr_image_1[:, :468, :]).float().unsqueeze(0).to(device)
         ldr_image_2_tensor = torch.from_numpy(ldr_image_2[:, :468, :]).float().unsqueeze(0).to(device)
@@ -48,7 +52,8 @@ def data_load(group, device, top ,bottom, left, right, hdr: bool):
     return ldr_image_1_tensor, ldr_image_2_tensor, ldr_image_3_tensor, events_1_tensor, events_2_tensor
 
 
-def main(model_name: str, pretrain_models: str, input_path: str, save_path: str, hdr: bool):
+def main(model_name: str, pretrain_models: str, input_path: str, save_path: str, hdr: bool, suffix: str,
+         compress: str = 'PQ'):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("cpu")
     top = 230
@@ -80,22 +85,26 @@ def main(model_name: str, pretrain_models: str, input_path: str, save_path: str,
         events_under = os.path.join(input_path, 'events/000000_1.npz')
         events_upper = os.path.join(input_path, 'events/000001_2.npz')
     group = (under_exposure, reference_image, over_exposure, events_under, events_upper)
-    input_data = data_load(group, device, top ,bottom, left, right, hdr)
+    input_data = data_load(group, device, top, bottom, left, right, hdr)
     with torch.no_grad():
         output = net(input_data[1], input_data[0], input_data[2], input_data[3],
                      input_data[4]).cpu().detach().numpy().astype(np.float64)
         output = np.transpose(output[0], (1, 2, 0))
     if hdr:
         u = 5000
-        output = ((1 + u) ** output) / u
-        output = hd.pq_2_linear(output)
-        # output = hd.rec2020_2_sRGB(output)
-        exposure_time = hd.histogram_based_exposure(output, target_percentile=99, target_value=0.9, gamma=2.2, tol=0.01,
-                                                     max_iter=100)
-        output = hd.change_exposure(output, 1)
-        output = hd.apply_gamma(output, exposure_time, 2.2)
-        cv2.imwrite(os.path.join(save_path, 'test_HDR_rec2020_gamma_1_3.tif'),
-                                 cv2.cvtColor((output * 65535).astype(np.uint16), cv2.COLOR_RGB2BGR))
+        output = (((1 + u) ** output) / u).astype(np.float64)
+        if compress == 'gamma':
+            output = hd.pq_2_linear(output).astype(np.float64)
+            # output = hd.rec2020_2_sRGB(output).astype(np.float64)
+            exposure_time = hd.histogram_based_exposure(output, target_percentile=99, target_value=0.9, gamma=2.2,
+                                                        tol=0.01,
+                                                        max_iter=100)
+            output = hd.change_exposure(output, 1).astype(np.float64)
+            output = hd.apply_gamma(output, exposure_time, 2.2).astype(np.float64)
+        # cv2.imwrite(os.path.join(save_path, 'test_HDR_sRGB_gamma_1_4.tif'),
+        #                          cv2.cvtColor((output * 65535).astype(np.uint16), cv2.COLOR_RGB2BGR))
+        iio.v3.imwrite(os.path.join(save_path, f'test_HDR_Rec2020_{compress}_{suffix}.tif'),
+                       (output * 65535).astype(np.uint16))
     else:
         output = (output * 255).astype(np.uint8)
         img = Image.fromarray(output, 'RGB')
@@ -120,7 +129,7 @@ if __name__ == '__main__':
     # width = args.width
     # num_events_per_pixel = args.num_events_per_pixel
     model_name = 'EHDR_network'
-    pretrain_models = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/1.3-fishing_longshot/EHDR_model_epoch_final.pth'
+    pretrain_models = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/1.7-trained_on_poker_fullshot/EHDR_model_epoch_final.pth'
     save_path = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/result'
     input_path = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/showgirl_02'
-    main(model_name, pretrain_models, input_path, save_path, hdr=True)
+    main(model_name, pretrain_models, input_path, save_path, hdr=True, compress='PQ', suffix='1_7')

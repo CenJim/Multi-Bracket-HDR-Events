@@ -493,10 +493,10 @@ if __name__ == '__main__':
     # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process HDR image and save to a path
-    # image_folder = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01'
-    # output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/Carousel_Fireworks_01/ldr_images'
-    # supervised_folder = '/home/s2491540/dataset/HDM_HDR/sequences/Carousel_Fireworks_01/hdr_images'
-    # process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
+    image_folder = '/home/s2491540/dataset/HDM_HDR/train/poker_fullshot'
+    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/poker_fullshot/ldr_images'
+    supervised_folder = '/home/s2491540/dataset/HDM_HDR/sequences/poker_fullshot/hdr_images'
+    process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
 
     # process events and save to a path
     # event_folder = '/home/s2491540/dataset/DSEC/train/interlaken_00_d/Interlaken_events_left'
@@ -509,8 +509,8 @@ if __name__ == '__main__':
     # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
 
     # process hdr events and save to a path
-    event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz'
-    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/Carousel_Fireworks_01/events'
-    image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01_timestamps.txt'
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')
+    # event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz'
+    # output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/bistro/events'
+    # image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/bistro_timestamps.txt'
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    # process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')

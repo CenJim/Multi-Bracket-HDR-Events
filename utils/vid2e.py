@@ -146,7 +146,7 @@ def print_events(events_file):
 
 
 if __name__ == "__main__":
-    image_dir = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01'
-    timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01_timestamps.txt'
+    image_dir = '/home/s2491540/dataset/HDM_HDR/train/poker_fullshot'
+    timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/poker_fullshot_timestamps.txt'
     save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
-    generate_events_loop(image_dir, timestamps_file, save_dir, 0.25, 0.25, 15)
+    generate_events_loop(image_dir, timestamps_file, save_dir, 0.17, 0.17, 15)

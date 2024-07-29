@@ -88,7 +88,7 @@ def normalize_to_8_bit(img):
 
 
 def normalize_to_16_bit(img):
-    return (img * 65535).astype('uint8')
+    return (img * 65535).astype('uint16')
 
 
 def test_hdr():
@@ -108,18 +108,28 @@ def test_hdr():
     print(img.shape)
 
 
+def crop_tiff(data_path, top, bottom, left, right):
+    image = iio.v3.imread(data_path)
+    image = image[10:-10, 10:-10]
+    image = image[top:bottom, left:right]
+    iio.v3.imwrite(os.path.join('temp', 'ground_truth_cropped.tif'), image)
+
+
 if __name__ == '__main__':
-    img_dir = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01'
-    timestamp_dir = '/home/s2491540/dataset/HDM_HDR/train/Carousel_Fireworks_01_timestamps.txt'
-
-    generate_timestamps(25, 0, img_dir, timestamp_dir)
-
-
+    # img_dir = '/home/s2491540/dataset/HDM_HDR/train/poker_fullshot'
+    # timestamp_dir = '/home/s2491540/dataset/HDM_HDR/train/poker_fullshot_timestamps.txt'
+    #
+    # generate_timestamps(24, 0, img_dir, timestamp_dir)
 
     # print_events('/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz')
-    # data_path = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/showgirl_02/ldr_images/showgirl_02_301966_4.npz'
-    # out_name = 'ldr.tif'
-    # npy_to_image(data_path, out_name, 230, 830, 650, 1250, 'npz')
+
+    # data_path = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/showgirl_02/ldr_images/showgirl_02_301969_7.npz'
+    # out_name = 'showgirl_02_over.tif'
+    # # npy_to_image(data_path, out_name, 230, 830, 650, 1250, 'npz')
+    # npy_to_image(data_path, out_name, 0, 1060, 0, 1900, 'npz')
+    # # ground_truth_path = '/home/s2491540/dataset/HDM_HDR/train/showgirl_02_301966.tif'
+    # # crop_tiff(ground_truth_path, 230, 830, 650, 1250)
+
     # events = np.load('/home/s2491540/dataset/HDM_HDR/sequences/showgirl_01/events/000000_1.npz')
     # for key in events:
     #     event = events[key]
@@ -129,8 +139,8 @@ if __name__ == '__main__':
     # get_model_param_num(model)
 
     # process hdr events and save to a path
-    # event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all_0.npz'
-    # output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/fishing_longshot/events'
-    # image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/fishing_longshot_timestamps.txt'
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-    # process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')
+    event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz'
+    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/poker_fullshot/events'
+    image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/poker_fullshot_timestamps.txt'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')
