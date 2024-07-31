@@ -1,3 +1,5 @@
+import math
+
 import torch
 from skimage.metrics import mean_squared_error as compare_mse
 from skimage.metrics import peak_signal_noise_ratio as compare_psnr
@@ -100,30 +102,45 @@ def calculate_lpips(img_1_dir, img_2_dir, gray_flag: bool = True):
 def calculate_average_quality(img_directory_list: list, correct_img_directory: str, step: int = 1):
     correct_files = [f for f in os.listdir(correct_img_directory) if
                      os.path.isfile(os.path.join(correct_img_directory, f)) and (
-                         os.path.splitext(f)[1] == '.png' or os.path.splitext(f)[1] == '.bmp' or
-                         os.path.splitext(f)[1] == '.jpg')]
+                             os.path.splitext(f)[1] == '.png' or os.path.splitext(f)[1] == '.bmp' or
+                             os.path.splitext(f)[1] == '.jpg')]
     correct_files.sort()
-    num_of_files = 0
-    psnr_all = 0.0
-    ssim_all = 0.0
-    mse_all = 0.0
-    lpips_all = 0.0
+    psnr_mean = 0.0
+    ssim_mean = 0.0
+    mse_mean = 0.0
+    lpips_mean = 0.0
+    psnr_S = 0.0
+    ssim_S = 0.0
+    mse_S = 0.0
+    lpips_S = 0.0
     correct_image_list = []
     compare_image_list = []
+    n = 0
     for directory in img_directory_list:
         compare_files = [f for f in os.listdir(directory) if
                          os.path.isfile(os.path.join(directory, f)) and (
-                             os.path.splitext(f)[1] == '.png' or os.path.splitext(f)[1] == '.bmp' or
-                             os.path.splitext(f)[1] == '.jpg')]
+                                 os.path.splitext(f)[1] == '.png' or os.path.splitext(f)[1] == '.bmp' or
+                                 os.path.splitext(f)[1] == '.jpg' or os.path.splitext(f)[1] == '.tif')]
         compare_files.sort()
         for index, filename in enumerate(correct_files):
-            num_of_files = num_of_files + 1
-            psnr_all = psnr_all + calculate_psnr(os.path.join(correct_img_directory, filename),
-                                                 os.path.join(directory, compare_files[(index + 1) * step - 1]))
-            ssim_all = ssim_all + calculate_ssim(os.path.join(correct_img_directory, filename),
-                                                 os.path.join(directory, compare_files[(index + 1) * step - 1]))
-            mse_all = mse_all + calculate_mse(os.path.join(correct_img_directory, filename),
-                                              os.path.join(directory, compare_files[(index + 1) * step - 1]))
+            n += 1
+            psnr_temp = calculate_psnr(os.path.join(correct_img_directory, filename),
+                                       os.path.join(directory, compare_files[(index + 1) * step - 1]))
+            old_psnr_mean = psnr_mean
+            psnr_mean += (psnr_temp - psnr_mean) / n
+            psnr_S += (psnr_temp - old_psnr_mean) * (psnr_temp - psnr_mean)
+
+            ssim_temp = calculate_ssim(os.path.join(correct_img_directory, filename),
+                                       os.path.join(directory, compare_files[(index + 1) * step - 1]))
+            old_ssim_mean = ssim_mean
+            ssim_mean += (ssim_temp - ssim_mean) / n
+            ssim_S += (ssim_temp - old_ssim_mean) * (ssim_temp - ssim_mean)
+
+            mse_temp = calculate_mse(os.path.join(correct_img_directory, filename),
+                                     os.path.join(directory, compare_files[(index + 1) * step - 1]))
+            old_mse_mean = mse_mean
+            mse_mean += (mse_temp - mse_mean) / n
+            mse_S += (mse_temp - old_mse_mean) * (mse_temp - mse_mean)
             # lpips_all = lpips_all + calculate_lpips(os.path.join(correct_img_directory, filename),
             #                                         os.path.join(directory, compare_files[(index + 1) * step - 1]))
             correct_image_list.append(preprocess_lpips_avg(os.path.join(correct_img_directory, filename)))
@@ -132,8 +149,10 @@ def calculate_average_quality(img_directory_list: list, correct_img_directory: s
     loss_fn_alex = lpips.LPIPS(net='alex')
     lpips_list = loss_fn_alex(torch.from_numpy(np.stack(correct_image_list)),
                               torch.from_numpy(np.stack(compare_image_list)))
-    return {'psnr': psnr_all / num_of_files, 'ssim': ssim_all / num_of_files, 'mse': mse_all / num_of_files,
-            'lpips': torch.mean(lpips_list)}
+
+    return {'psnr_mean': psnr_mean, 'ssim_mean': ssim_mean, 'mse_mean': mse_mean, 'lpips': torch.mean(lpips_list),
+            'psnr_std': math.sqrt(psnr_S / (n - 1)), 'ssim_std': math.sqrt(ssim_S / (n - 1)),
+            'mse_std': math.sqrt(mse_S / (n - 1)), 'lpips_std': torch.std(lpips_list, unbiased=True)}
 
 
 def rename_files_in_directory(directory, prefix="file", add_old=False):

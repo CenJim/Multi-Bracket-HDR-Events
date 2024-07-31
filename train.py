@@ -183,8 +183,8 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     # Network
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = EHDR_network(event_shape=(crop_size, crop_size), num_feat=64, num_frame=3).to(device)
-    if torch.cuda.device_count() > 1:
-        model = nn.DataParallel(model)
+    # if torch.cuda.device_count() > 1:
+    model = nn.DataParallel(model)
     model.load_state_dict(torch.load(pretrain_models))
     optimizer = Adam(model.parameters(), lr=learning_rate)
     scheduler = StepLR(optimizer, step_size=15, gamma=0.5)

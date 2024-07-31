@@ -39,7 +39,7 @@ def generate_events(esim, images, timestamps):
     # if torch.cuda.device_count() > 1:
     #     print("Let's use", torch.cuda.device_count(), "GPUs!")
     #     esim = nn.DataParallel(esim)
-    esim.to(device)
+    # esim.to(device)
     print("Loading images")
     images = np.stack([cv2.imread(f, cv2.IMREAD_GRAYSCALE)[10:-10, 10:-10] for f in images])
 
@@ -146,7 +146,7 @@ def print_events(events_file):
 
 
 if __name__ == "__main__":
-    image_dir = '/home/s2491540/dataset/HDM_HDR/train/poker_fullshot'
-    timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/poker_fullshot_timestamps.txt'
+    image_dir = '/home/s2491540/dataset/HDM_HDR/train/poker_travelling_slowmotion_02'
+    timestamps_file = '/home/s2491540/dataset/HDM_HDR/train/poker_travelling_slowmotion_02_timestamps.txt'
     save_dir = '/home/s2491540/dataset/HDM_HDR/train/'
-    generate_events_loop(image_dir, timestamps_file, save_dir, 0.17, 0.17, 15)
+    generate_events_loop(image_dir, timestamps_file, save_dir, 0.1, 0.1, 15)

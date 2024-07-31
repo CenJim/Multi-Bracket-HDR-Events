@@ -67,9 +67,10 @@ def main(model_name: str, pretrain_models: str, input_path: str, save_path: str,
     net.eval()
     state_dict = torch.load(pretrain_models)
     # new_state_dict = {'module.' + k: v for k, v in state_dict.items()}
+    # new_state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
     net = nn.DataParallel(net)
-    net.load_state_dict(state_dict)
     net = net.to(device)
+    net.load_state_dict(state_dict)
 
     os.path.join(input_path, 'ldr_images/000001_2.npy')
     if hdr:
