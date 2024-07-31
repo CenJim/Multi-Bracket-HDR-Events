@@ -1,6 +1,9 @@
 import math
 
 import torch
+from imageio.config.plugins import module_name
+from mpl_toolkits.mplot3d.proj3d import transform
+from numpy.core.numeric import False_
 from skimage.metrics import mean_squared_error as compare_mse
 from skimage.metrics import peak_signal_noise_ratio as compare_psnr
 from skimage.metrics import structural_similarity as compare_ssim
@@ -8,6 +11,11 @@ import cv2
 import os
 import numpy as np
 import lpips
+from train import SequenceDataset
+import torchvision.transforms as transforms
+from evaluation import inference
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 
 def histogram_normalization(img_dir, gray_flag: bool = True):
@@ -45,7 +53,7 @@ def preprocess_lpips_avg(img_dir):
     image = image.astype(np.float32)
     image = image / 255.0
     image = image * 2 - 1
-    image = np.transpose(image, (2, 0, 1))  # transform the image from H*W*3 to 1*3*H*W
+    image = np.transpose(image, (2, 0, 1))  # transform the image from H*W*3 to 3*H*W
     return image
 
 
@@ -78,7 +86,7 @@ def calculate_ssim(img_1_dir, img_2_dir, gray_flag: bool = True):
     return ssim
 
 
-def calculate_mse(img_1_dir, img_2_dir, gray_flag: bool = True):
+def calculate_mse(img_1_dir, img_2_dir, gray_flag: bool = True, channel_axis=2):
     img_correct = histogram_normalization(img_1_dir, gray_flag)
     img_compared = histogram_normalization(img_2_dir, gray_flag)
     # if gray_flag:
@@ -99,11 +107,61 @@ def calculate_lpips(img_1_dir, img_2_dir, gray_flag: bool = True):
     return d[0][0][0][0]
 
 
+def test_dataset(dataset_dir, hdr: bool, model_name, pretrain_models_path, device):
+    dataset = SequenceDataset(dataset_dir, transform=transforms.RandomCrop(600), hdr=hdr, u_law_compress=False)
+    data_loader = DataLoader(dataset, batch_size=1, shuffle=False)
+    psnr_mean = 0.0
+    ssim_mean = 0.0
+    mse_mean = 0.0
+    lpips_mean = 0.0
+    psnr_S = 0.0
+    ssim_S = 0.0
+    mse_S = 0.0
+    lpips_S = 0.0
+    correct_image_list = []
+    compare_image_list = []
+    n = 0
+    for i, (ldr_1, ldr_2, ldr_3, events_1, events_2, hdr_true) in tqdm(enumerate(data_loader), total=len(data_loader),
+                                                                       desc='test dataset'):
+        ldr_1, ldr_2, ldr_3, events_1, events_2 = ldr_1.to(device), ldr_2.to(device), ldr_3.to(
+            device), events_1.to(device), events_2.to(device)
+        out_img = inference(model_name, pretrain_models_path,
+                            (ldr_1, ldr_2, ldr_3, events_1, events_2),
+                            hdr=hdr, compress='PQ')
+        n += 1
+        hdr_true = hdr_true.numpy().astype(np.float64).transpose(1, 2, 0)
+
+        psnr_temp = compare_psnr(hdr_true, out_img)
+        old_psnr_mean = psnr_mean
+        psnr_mean += (psnr_temp - psnr_mean) / n
+        psnr_S += (psnr_temp - old_psnr_mean) * (psnr_temp - psnr_mean)
+
+        ssim_temp = compare_ssim(out_img, hdr_true, channel_axis=-1)
+        old_ssim_mean = ssim_mean
+        ssim_mean += (ssim_temp - ssim_mean) / n
+        ssim_S += (ssim_temp - old_ssim_mean) * (ssim_temp - ssim_mean)
+
+        mse_temp = compare_mse(out_img, hdr_true)
+        old_mse_mean = mse_mean
+        mse_mean += (mse_temp - mse_mean) / n
+        mse_S += (mse_temp - old_mse_mean) * (mse_temp - mse_mean)
+        # lpips_all = lpips_all + calculate_lpips(os.path.join(correct_img_directory, filename),
+        #                                         os.path.join(directory, compare_files[(index + 1) * step - 1]))
+        correct_image_list.append((hdr_true * 2 - 1).transpose(2, 0, 1))
+        compare_image_list.append((out_img * 2 - 1).transpose(2, 0, 1))
+    loss_fn_alex = lpips.LPIPS(net='alex')
+    lpips_list = loss_fn_alex(torch.from_numpy(np.stack(correct_image_list)),
+                              torch.from_numpy(np.stack(compare_image_list)))
+    return {'psnr_mean': psnr_mean, 'ssim_mean': ssim_mean, 'mse_mean': mse_mean, 'lpips': float(torch.mean(lpips_list).item()),
+            'psnr_std': math.sqrt(psnr_S / (n - 1)), 'ssim_std': math.sqrt(ssim_S / (n - 1)),
+            'mse_std': math.sqrt(mse_S / (n - 1)), 'lpips_std': float(torch.std(lpips_list, unbiased=True).item())}
+
+
 def calculate_average_quality(img_directory_list: list, correct_img_directory: str, step: int = 1):
     correct_files = [f for f in os.listdir(correct_img_directory) if
                      os.path.isfile(os.path.join(correct_img_directory, f)) and (
                              os.path.splitext(f)[1] == '.png' or os.path.splitext(f)[1] == '.bmp' or
-                             os.path.splitext(f)[1] == '.jpg')]
+                             os.path.splitext(f)[1] == '.jpg' or os.path.splitext(f)[1] == '.tif')]
     correct_files.sort()
     psnr_mean = 0.0
     ssim_mean = 0.0
@@ -150,9 +208,9 @@ def calculate_average_quality(img_directory_list: list, correct_img_directory: s
     lpips_list = loss_fn_alex(torch.from_numpy(np.stack(correct_image_list)),
                               torch.from_numpy(np.stack(compare_image_list)))
 
-    return {'psnr_mean': psnr_mean, 'ssim_mean': ssim_mean, 'mse_mean': mse_mean, 'lpips': torch.mean(lpips_list),
+    return {'psnr_mean': psnr_mean, 'ssim_mean': ssim_mean, 'mse_mean': mse_mean, 'lpips': float(torch.mean(lpips_list).item()),
             'psnr_std': math.sqrt(psnr_S / (n - 1)), 'ssim_std': math.sqrt(ssim_S / (n - 1)),
-            'mse_std': math.sqrt(mse_S / (n - 1)), 'lpips_std': torch.std(lpips_list, unbiased=True)}
+            'mse_std': math.sqrt(mse_S / (n - 1)), 'lpips_std': float(torch.std(lpips_list, unbiased=True).item())}
 
 
 def rename_files_in_directory(directory, prefix="file", add_old=False):
@@ -190,6 +248,11 @@ def rename_files_in_directory(directory, prefix="file", add_old=False):
 
 # 示例用法
 if __name__ == "__main__":
-    directory_path = '/Users/macbookpro/python_proj/vision_quality_compare/data/IJRR/EV2ID_index_20.png'
-    cv2.imwrite('/Users/macbookpro/python_proj/vision_quality_compare/data/IJRR/EV2ID_index_20_normalized.png',
-                histogram_normalization(directory_path))
+    # directory_path = '/Users/macbookpro/python_proj/vision_quality_compare/data/IJRR/EV2ID_index_20.png'
+    # cv2.imwrite('/Users/macbookpro/python_proj/vision_quality_compare/data/IJRR/EV2ID_index_20_normalized.png',
+    #             histogram_normalization(directory_path))
+    dataset_dir = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train'
+    model_name = 'EHDR_network'
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    pretrained_model = ''
+    test_dataset(dataset_dir, hdr=True, model_name=module_name, pretrain_models_path=pretrained_model, device = device)

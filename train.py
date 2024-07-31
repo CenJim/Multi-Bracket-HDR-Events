@@ -19,7 +19,7 @@ from model.network import EHDR_network
 
 
 class SequenceDataset(Dataset):
-    def __init__(self, root_dir, transform=None, hdr: bool = False):
+    def __init__(self, root_dir, transform=None, hdr: bool = False, u_law_compress: bool = True):
         """
         root_dir: 包含所有sequence文件夹的根目录
         transform: torchvision.transforms 对象，用于对输出图像进行处理
@@ -28,6 +28,7 @@ class SequenceDataset(Dataset):
         self.transform = transform
         self.groups = []
         self.hdr = hdr
+        self.u_law_compress_flag = u_law_compress
 
         # search for all sequence dirs
         sequences = [os.path.join(root_dir, d) for d in sorted(os.listdir(root_dir)) if
@@ -84,8 +85,9 @@ class SequenceDataset(Dataset):
             ldr_image_2 = np.load(group[1])['data']
             ldr_image_3 = np.load(group[2])['data']
             hdr_image = np.load(group[5])['data']
-            u = 5000
-            hdr_image = np.log1p(u * hdr_image) / np.log1p(u)
+            if self.u_law_compress_flag:
+                u = 5000
+                hdr_image = np.log1p(u * hdr_image) / np.log1p(u)
         else:
             ldr_image_1 = np.load(group[0])
             ldr_image_2 = np.load(group[1])
