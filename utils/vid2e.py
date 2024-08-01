@@ -146,7 +146,7 @@ def print_events(events_file):
 
 
 if __name__ == "__main__":
-    image_dir = '/home/s2491540/dataset/HDM_HDR/test/Bar-Scene-0002'
-    timestamps_file = '/home/s2491540/dataset/HDM_HDR/test/Bar-Scene-0002_timestamps.txt'
+    image_dir = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001'
+    timestamps_file = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001_timestamps.txt'
     save_dir = '/home/s2491540/dataset/HDM_HDR/test/'
-    generate_events_loop(image_dir, timestamps_file, save_dir, 0.02, 0.02, 15)
+    generate_events_loop(image_dir, timestamps_file, save_dir, 0.15, 0.15, 15)

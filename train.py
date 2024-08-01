@@ -137,8 +137,16 @@ class RandomRotate90:
     def __init__(self):
         self.angles = [0, 90, 180, 270]
 
-    def __call__(self, x):
-        angle = random.choice(self.angles)  # 随机选择一个角度
+    def __call__(self, x, random_umber):
+        angle = 0
+        if random_umber < 0.25:
+            angle = self.angles[0]
+        elif 0.25 <= random_umber < 0.5:
+            angle = self.angles[1]
+        elif 0.5 <= random_umber < 0.75:
+            angle = self.angles[2]
+        else:
+            angle = self.angles[3]
         return transforms.functional.rotate(x, angle)  # 应用旋转
 
 
@@ -171,6 +179,34 @@ class RandomTransform:
         return transformed_data_list
 
 
+class RandomTransformNew:
+
+    def __init__(self):
+        self.random_rotate = RandomRotate90()
+
+    def __call__(self, data_list: list):
+        """
+        :param data_list: ldr_image_1,2,3 events_1,2 hdr_image_target
+        :return transformed_data_list: ldr_image_1,2,3 events_1,2 hdr_image_target
+        """
+        crop_indices = transforms.RandomCrop.get_params(data_list[0], output_size=(self.size, self.size))
+        i, j, h, w = crop_indices
+        random_number_1 = np.random.rand()
+        random_number_2 = np.random.rand()
+        random_number_3 = np.random.rand()
+        transformed_data_list = []
+        for data in data_list:
+            data = TF.crop(data, i, j, h, w)
+            if random_number_1 > 0.5:
+                data = TF.hflip(data)
+            if random_number_2 > 0.5:
+                data = TF.vflip(data)
+            data = self.random_rotate(data, random_number_3)
+            transformed_data_list.append(data)
+
+        return transformed_data_list
+
+
 def main(model_name: str, pretrain_models: str, root_files: str, save_path: str, height: int, width: int,
          num_events_per_pixel: float, hdr_flag: bool):
     # Parameters
@@ -195,7 +231,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
 
     # Data loading and transformations
 
-    transform = RandomTransform()
+    transform = RandomTransformNew()
     dataset = SequenceDataset(root_files, transform=transform, hdr=hdr_flag)  # Placeholder for your dataset class
     print(f'length of dataset: {len(dataset)}')
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)

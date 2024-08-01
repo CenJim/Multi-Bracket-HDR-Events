@@ -116,8 +116,8 @@ def crop_tiff(data_path, top, bottom, left, right):
 
 
 if __name__ == '__main__':
-    # img_dir = '/home/s2491540/dataset/HDM_HDR/test/Bar-Scene-0002'
-    # timestamp_dir = '/home/s2491540/dataset/HDM_HDR/test/Bar-Scene-0002_timestamps.txt'
+    # img_dir = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001'
+    # timestamp_dir = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001_timestamps.txt'
     #
     # generate_timestamps(192, 0, img_dir, timestamp_dir)
 
@@ -139,8 +139,8 @@ if __name__ == '__main__':
     # get_model_param_num(model)
 
     # process hdr events and save to a path
-    event_file = '/home/s2491540/dataset/HDM_HDR/test/events_data_Bar-Scene-0002.npz'
-    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/Bar-Scene-0002/events'
-    image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/test/Bar-Scene-0002_timestamps.txt'
+    event_file = '/home/s2491540/dataset/HDM_HDR/test/events_data_Fire-Scene-0001.npz'
+    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/Fire-Scene-0001/events'
+    image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001_timestamps.txt'
     device = "cuda" if torch.cuda.is_available() else "cpu"
     process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')

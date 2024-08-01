@@ -52,8 +52,8 @@ def data_load(group, device, top, bottom, left, right, hdr: bool):
     return ldr_image_1_tensor, ldr_image_2_tensor, ldr_image_3_tensor, events_1_tensor, events_2_tensor
 
 
-def inference(model_name: str, pretrain_models: str, input_data, save_path: str = None, hdr: bool = False,
-              suffix: str = None, compress: str = 'PQ', save_flag: bool = True):
+def inference(model_name: str, pretrain_models: str, input_data, suffix=None, save_path: str = None, hdr: bool = False,
+              compress: str = 'PQ', save_flag: bool = True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("cpu")
     top = 230
@@ -74,19 +74,19 @@ def inference(model_name: str, pretrain_models: str, input_data, save_path: str 
 
     with torch.no_grad():
         output = net(input_data[1], input_data[0], input_data[2], input_data[3],
-                     input_data[4]).cpu().detach().numpy().astype(np.float64)
+                     input_data[4]).cpu().detach().numpy().astype(np.float32)
         output = np.transpose(output[0], (1, 2, 0))
     if hdr:
         u = 5000
-        output = (((1 + u) ** output) / u).astype(np.float64)
+        output = (((1 + u) ** output) / u).astype(np.float32)
         if compress == 'gamma':
-            output = hd.pq_2_linear(output).astype(np.float64)
+            output = hd.pq_2_linear(output).astype(np.float32)
             # output = hd.rec2020_2_sRGB(output).astype(np.float64)
             exposure_time = hd.histogram_based_exposure(output, target_percentile=99, target_value=0.9, gamma=2.2,
                                                         tol=0.01,
                                                         max_iter=100)
-            output = hd.change_exposure(output, 1).astype(np.float64)
-            output = hd.apply_gamma(output, exposure_time, 2.2).astype(np.float64)
+            output = hd.change_exposure(output, 1).astype(np.float32)
+            output = hd.apply_gamma(output, exposure_time, 2.2).astype(np.float32)
         # cv2.imwrite(os.path.join(save_path, 'test_HDR_sRGB_gamma_1_4.tif'),
         #                          cv2.cvtColor((output * 65535).astype(np.uint16), cv2.COLOR_RGB2BGR))
         if save_flag:

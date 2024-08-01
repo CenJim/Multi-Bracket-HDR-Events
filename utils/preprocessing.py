@@ -493,9 +493,9 @@ if __name__ == '__main__':
     # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process HDR image and save to a path
-    image_folder = '/home/s2491540/dataset/HDM_HDR/test/Bar-Scene-0002'
-    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/Bar-Scene-0002/ldr_images'
-    supervised_folder = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/Bar-Scene-0002/hdr_images'
+    image_folder = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001'
+    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/Fire-Scene-0001/ldr_images'
+    supervised_folder = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/Fire-Scene-0001/hdr_images'
     process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
 
     # process events and save to a path

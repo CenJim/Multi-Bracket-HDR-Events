@@ -1,9 +1,9 @@
+import json
 import math
+import random
+import sys
 
 import torch
-from imageio.config.plugins import module_name
-from mpl_toolkits.mplot3d.proj3d import transform
-from numpy.core.numeric import False_
 from skimage.metrics import mean_squared_error as compare_mse
 from skimage.metrics import peak_signal_noise_ratio as compare_psnr
 from skimage.metrics import structural_similarity as compare_ssim
@@ -13,9 +13,11 @@ import numpy as np
 import lpips
 from train import SequenceDataset
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as F
 from evaluation import inference
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import albumentations as A
 
 
 def histogram_normalization(img_dir, gray_flag: bool = True):
@@ -107,8 +109,25 @@ def calculate_lpips(img_1_dir, img_2_dir, gray_flag: bool = True):
     return d[0][0][0][0]
 
 
-def test_dataset(dataset_dir, hdr: bool, model_name, pretrain_models_path, device):
-    dataset = SequenceDataset(dataset_dir, transform=transforms.RandomCrop(600), hdr=hdr, u_law_compress=False)
+class RandomCropTransform:
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, data_list: list):
+        """
+        :param data_list: ldr_image_1,2,3 events_1,2 hdr_image_target
+        :return transformed_data_list: ldr_image_1,2,3 events_1,2 hdr_image_target
+        """
+        transformed_data_list = []
+        crop_indices = transforms.RandomCrop.get_params(data_list[0], output_size=(self.size, self.size))
+        i, j, h, w = crop_indices
+        for data in data_list:
+            transformed_data_list.append(F.crop(data, i, j, h, w))
+        return transformed_data_list
+
+
+def test_dataset(dataset_dir, hdr: bool, model_name, pretrain_models_path, device, model_suffix):
+    dataset = SequenceDataset(dataset_dir, transform=RandomCropTransform(600), hdr=hdr, u_law_compress=False)
     data_loader = DataLoader(dataset, batch_size=1, shuffle=False)
     psnr_mean = 0.0
     ssim_mean = 0.0
@@ -127,16 +146,17 @@ def test_dataset(dataset_dir, hdr: bool, model_name, pretrain_models_path, devic
             device), events_1.to(device), events_2.to(device)
         out_img = inference(model_name, pretrain_models_path,
                             (ldr_1, ldr_2, ldr_3, events_1, events_2),
-                            hdr=hdr, compress='PQ')
+                            hdr=hdr, compress='PQ', save_flag=True,
+                            save_path='/home/s2491540/dataset/HDM_HDR/test/output', suffix=f'{model_suffix}_{i}')
         n += 1
-        hdr_true = hdr_true.numpy().astype(np.float64).transpose(1, 2, 0)
+        hdr_true = hdr_true[0].numpy().astype(np.float32).transpose(1, 2, 0)
 
         psnr_temp = compare_psnr(hdr_true, out_img)
         old_psnr_mean = psnr_mean
         psnr_mean += (psnr_temp - psnr_mean) / n
         psnr_S += (psnr_temp - old_psnr_mean) * (psnr_temp - psnr_mean)
 
-        ssim_temp = compare_ssim(out_img, hdr_true, channel_axis=-1)
+        ssim_temp = compare_ssim(out_img, hdr_true, channel_axis=-1, data_range=1)
         old_ssim_mean = ssim_mean
         ssim_mean += (ssim_temp - ssim_mean) / n
         ssim_S += (ssim_temp - old_ssim_mean) * (ssim_temp - ssim_mean)
@@ -149,10 +169,14 @@ def test_dataset(dataset_dir, hdr: bool, model_name, pretrain_models_path, devic
         #                                         os.path.join(directory, compare_files[(index + 1) * step - 1]))
         correct_image_list.append((hdr_true * 2 - 1).transpose(2, 0, 1))
         compare_image_list.append((out_img * 2 - 1).transpose(2, 0, 1))
+
+        print(f'current psnr:{psnr_temp}\ncurrent ssim:{ssim_temp}\ncurrent mse:{mse_temp}\n')
+        sys.stdout.flush()
     loss_fn_alex = lpips.LPIPS(net='alex')
     lpips_list = loss_fn_alex(torch.from_numpy(np.stack(correct_image_list)),
                               torch.from_numpy(np.stack(compare_image_list)))
-    return {'psnr_mean': psnr_mean, 'ssim_mean': ssim_mean, 'mse_mean': mse_mean, 'lpips': float(torch.mean(lpips_list).item()),
+    return {'psnr_mean': psnr_mean, 'ssim_mean': ssim_mean, 'mse_mean': mse_mean,
+            'lpips_mean': float(torch.mean(lpips_list).item()),
             'psnr_std': math.sqrt(psnr_S / (n - 1)), 'ssim_std': math.sqrt(ssim_S / (n - 1)),
             'mse_std': math.sqrt(mse_S / (n - 1)), 'lpips_std': float(torch.std(lpips_list, unbiased=True).item())}
 
@@ -208,7 +232,8 @@ def calculate_average_quality(img_directory_list: list, correct_img_directory: s
     lpips_list = loss_fn_alex(torch.from_numpy(np.stack(correct_image_list)),
                               torch.from_numpy(np.stack(compare_image_list)))
 
-    return {'psnr_mean': psnr_mean, 'ssim_mean': ssim_mean, 'mse_mean': mse_mean, 'lpips': float(torch.mean(lpips_list).item()),
+    return {'psnr_mean': psnr_mean, 'ssim_mean': ssim_mean, 'mse_mean': mse_mean,
+            'lpips_mean': float(torch.mean(lpips_list).item()),
             'psnr_std': math.sqrt(psnr_S / (n - 1)), 'ssim_std': math.sqrt(ssim_S / (n - 1)),
             'mse_std': math.sqrt(mse_S / (n - 1)), 'lpips_std': float(torch.std(lpips_list, unbiased=True).item())}
 
@@ -254,5 +279,7 @@ if __name__ == "__main__":
     dataset_dir = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train'
     model_name = 'EHDR_network'
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    pretrained_model = ''
-    test_dataset(dataset_dir, hdr=True, model_name=module_name, pretrain_models_path=pretrained_model, device = device)
+    pretrained_model = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/1.9-trained_on_poker_travelling_slowmotion_02/EHDR_model_epoch_final.pth'
+    quality = test_dataset(dataset_dir, hdr=True, model_name=model_name, pretrain_models_path=pretrained_model,
+                           device=device, model_suffix='1_9')
+    print(json.dumps(quality, indent=4))
