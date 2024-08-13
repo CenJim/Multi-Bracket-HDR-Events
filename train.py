@@ -1,6 +1,7 @@
 import argparse
 import copy
 import random
+import sys
 import time
 
 import torch
@@ -78,7 +79,13 @@ class SequenceDataset(Dataset):
 
         # get the file path of the voxel grid
         group = self.groups[idx]
-
+        # print(group[0])
+        # print(group[1])
+        # print(group[2])
+        # print(group[3])
+        # print(group[4])
+        # print(group[5])
+        sys.stdout.flush()
         # 读取数据
         if self.hdr:
             ldr_image_1 = np.load(group[0])['data']
@@ -181,8 +188,9 @@ class RandomTransform:
 
 class RandomTransformNew:
 
-    def __init__(self):
+    def __init__(self, size):
         self.random_rotate = RandomRotate90()
+        self.size = size
 
     def __call__(self, data_list: list):
         """
@@ -207,12 +215,13 @@ class RandomTransformNew:
         return transformed_data_list
 
 
-def main(model_name: str, pretrain_models: str, root_files: str, save_path: str, height: int, width: int,
+def main(model_name: str, pretrained_flag, pretrain_models: str, root_files: str, save_path: str, height: int,
+         width: int,
          num_events_per_pixel: float, hdr_flag: bool):
     # Parameters
-    epochs = 60
+    epochs = 10
     batch_size = 2
-    learning_rate = 1e-4
+    learning_rate = 1.25e-5
     crop_size = 256
     time_steps = 1  # Calculate loss every 5 time steps
     # kwargs = {'event_shape': (height, width), 'num_feat': 64, 'num_frame': 3}
@@ -223,7 +232,13 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     model = EHDR_network(event_shape=(crop_size, crop_size), num_feat=64, num_frame=3).to(device)
     # if torch.cuda.device_count() > 1:
     model = nn.DataParallel(model)
-    model.load_state_dict(torch.load(pretrain_models))
+    if pretrained_flag:
+        model.load_state_dict(torch.load(pretrain_models))
+        print('pretrained model loaded')
+        sys.stdout.flush()
+    else:
+        print('no pretrained model')
+        sys.stdout.flush()
     optimizer = Adam(model.parameters(), lr=learning_rate)
     scheduler = StepLR(optimizer, step_size=15, gamma=0.5)
     loss_fun = CombinedLoss()
@@ -231,7 +246,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
 
     # Data loading and transformations
 
-    transform = RandomTransformNew()
+    transform = RandomTransformNew(256)
     dataset = SequenceDataset(root_files, transform=transform, hdr=hdr_flag)  # Placeholder for your dataset class
     print(f'length of dataset: {len(dataset)}')
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -244,7 +259,7 @@ def main(model_name: str, pretrain_models: str, root_files: str, save_path: str,
     else:
         print(f"{model_path} exists")
     # Training loop
-    save_interval = 10
+    save_interval = 2
     start_time = time.time()
     model.train()
     for epoch in range(epochs):
@@ -304,4 +319,4 @@ if __name__ == '__main__':
     width = args.width
     num_events_per_pixel = args.num_events_per_pixel
     hdr_flag = args.hdr_flag
-    main(model_name, pretrain_models, root_files, save_path, height, width, num_events_per_pixel, hdr_flag)
+    main(model_name, True, pretrain_models, root_files, save_path, height, width, num_events_per_pixel, hdr_flag)

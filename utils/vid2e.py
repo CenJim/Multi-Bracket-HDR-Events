@@ -125,8 +125,8 @@ def generate_events_loop(image_dir, timestamps_file, save_dir, threshold_p=0.2, 
     print('sorted output got')
     print('savez')
     sys.stdout.flush()
-    save_file = os.path.join(save_dir, 'events_data_all.npz')
-
+    # save_file = os.path.join(save_dir, 'events_data_all.npz')
+    save_file = save_dir
     np.savez_compressed(save_file, x=merged_dict['x'], y=merged_dict['y'], p=merged_dict['p'], t=merged_dict['t'])
     print('compressed saved')
     print('saving events process done')
@@ -146,7 +146,12 @@ def print_events(events_file):
 
 
 if __name__ == "__main__":
-    image_dir = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001'
-    timestamps_file = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001_timestamps.txt'
-    save_dir = '/home/s2491540/dataset/HDM_HDR/test/'
-    generate_events_loop(image_dir, timestamps_file, save_dir, 0.15, 0.15, 15)
+    # img_dir = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/figure_pf2'
+    # timestamp_dir = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/pf2_timestamps.txt'
+    # generate_timestamps(24, 0, img_dir, timestamp_dir)
+
+
+    image_dir = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/figure_pf2'
+    timestamps_file = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/pf2_timestamps.txt'
+    save_dir = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/pf2_events.npz'
+    generate_events_loop(image_dir, timestamps_file, save_dir, 0.02, 0.02, 15)

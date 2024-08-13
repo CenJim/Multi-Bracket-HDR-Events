@@ -493,9 +493,9 @@ if __name__ == '__main__':
     # process_images(image_folder, output_folder, supervised_folder, image_timestamps_path, 'npy')
 
     # process HDR image and save to a path
-    image_folder = '/home/s2491540/dataset/HDM_HDR/test/Fire-Scene-0001'
-    output_folder = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/Fire-Scene-0001/ldr_images'
-    supervised_folder = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train/Fire-Scene-0001/hdr_images'
+    image_folder = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/figure_pf2'
+    output_folder = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/sequence/ldr_images'
+    supervised_folder = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/sequence/hdr_images'
     process_hdr_images(image_folder, output_folder, supervised_folder, 'npy')
 
     # process events and save to a path
@@ -509,8 +509,8 @@ if __name__ == '__main__':
     # process_events(event_folder, output_folder, image_timestamps_path, 640, 480, 8, 5, device, True, 'npz')
 
     # process hdr events and save to a path
-    # event_file = '/home/s2491540/dataset/HDM_HDR/train/events_data_all.npz'
-    # output_folder = '/home/s2491540/dataset/HDM_HDR/sequences/bistro/events'
-    # image_timestamps_path = '/home/s2491540/dataset/HDM_HDR/train/bistro_timestamps.txt'
+    # event_file = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/pf2_events.npz'
+    # output_folder = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/sequence/events'
+    # image_timestamps_path = '/localdisk/home/s2491540/HDM_HDR/figure_sequences_03/pf2_timestamps.txt'
     # device = "cuda" if torch.cuda.is_available() else "cpu"
     # process_events_hdr(event_file, output_folder, image_timestamps_path, 1900, 1060, 5, 5, device, True, 'npz')

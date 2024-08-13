@@ -147,7 +147,7 @@ def test_dataset(dataset_dir, hdr: bool, model_name, pretrain_models_path, devic
         out_img = inference(model_name, pretrain_models_path,
                             (ldr_1, ldr_2, ldr_3, events_1, events_2),
                             hdr=hdr, compress='PQ', save_flag=True,
-                            save_path='/home/s2491540/dataset/HDM_HDR/test/output', suffix=f'{model_suffix}_{i}')
+                            save_path='/localdisk/home/s2491540/HDM_HDR/test/output', suffix=f'{model_suffix}_{i}')
         n += 1
         hdr_true = hdr_true[0].numpy().astype(np.float32).transpose(1, 2, 0)
 
@@ -276,10 +276,10 @@ if __name__ == "__main__":
     # directory_path = '/Users/macbookpro/python_proj/vision_quality_compare/data/IJRR/EV2ID_index_20.png'
     # cv2.imwrite('/Users/macbookpro/python_proj/vision_quality_compare/data/IJRR/EV2ID_index_20_normalized.png',
     #             histogram_normalization(directory_path))
-    dataset_dir = '/home/s2491540/dataset/HDM_HDR/sequences_not_for_train'
+    dataset_dir = '/localdisk/home/s2491540/HDM_HDR/test_sequences'
     model_name = 'EHDR_network'
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    pretrained_model = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/1.9-trained_on_poker_travelling_slowmotion_02/EHDR_model_epoch_final.pth'
+    pretrained_model = '/home/s2491540/Pythonproj/Multi-Bracket-HDR-Events/pretrained_models/EHDR_HDR/EHDR_model_epoch_final.pth'
     quality = test_dataset(dataset_dir, hdr=True, model_name=model_name, pretrain_models_path=pretrained_model,
                            device=device, model_suffix='1_9')
     print(json.dumps(quality, indent=4))

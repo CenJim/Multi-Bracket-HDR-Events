@@ -5,3 +5,4 @@ __pycache__/
 .vscode/     # 如果使用 Visual Studio Code，忽略其设置文件夹。
 .DS_Store    # 忽略 macOS 的文件系统索引文件。
 venv/        # 忽略虚拟环境目录。
+build/
